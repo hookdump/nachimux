@@ -17,6 +17,7 @@ Tabs	prefix	<	Move tab left	swap-window -t -1 \; previous-window
 Tabs	prefix	>	Move tab right	swap-window -t +1 \; next-window	
 Tabs	prefix	X	Close the current tab	kill-window	Close this tab?
 Tabs	prefix	f	Find a tab by name	find-window	
+Tabs	prefix	m	Move this tab to another workspace (pick from the tree)	choose-tree -Zs "move-window -t '%%:'"	
 Splits	prefix	-	Split top / bottom in the current directory	split-window -v -c "#{pane_current_path}"	
 Splits	prefix	=	Split side by side in the current directory	split-window -h -c "#{pane_current_path}"	
 Splits	prefix	h j k l	Move between splits (vim style; arrows work too)		
@@ -45,7 +46,7 @@ Plugins	prefix	C-s	Save all workspaces, tabs and splits	run-shell ~/.tmux/plugin
 Plugins	prefix	C-r	Restore the last saved layout	run-shell ~/.tmux/plugins/tmux-resurrect/scripts/restore.sh	
 Plugins	prefix	I	Install plugins listed in the config	run-shell ~/.tmux/plugins/tpm/scripts/install_plugins.sh	
 Plugins	prefix	U	Update installed plugins	run-shell "~/.tmux/plugins/tpm/scripts/update_plugin.sh all"	
-Help & misc	prefix	p	Open the executable command palette		
+Help & misc	prefix	p	Open the command palette (also on prefix a)		
 Help & misc	prefix	/	Open the searchable nachimux help	nachimux-help	
 Help & misc	prefix	r	Reload the tmux config	source-file ~/.tmux.conf	
 Help & misc	prefix	:	Open the tmux command prompt	command-prompt	
