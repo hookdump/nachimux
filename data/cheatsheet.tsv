@@ -1,11 +1,11 @@
 category	mode	keys	description	command	confirm
-Workspaces	prefix	w	Switch, create, rename or delete a workspace	choose-tree -Zs	
+Workspaces	prefix	w	Switch or kill a workspace (tree view; F1 for help)	choose-tree -Zs	
 Workspaces	prefix	)	Next workspace	switch-client -n	
 Workspaces	prefix	(	Previous workspace	switch-client -p	
 Workspaces	prefix	b	Toggle the workspace sidebar	run-shell "$NACHIMUX_ROOT/scripts/sidebar-toggle.sh"	
 Workspaces	prefix	d	Detach and leave everything running	detach-client	
 Workspaces	prefix	$	Rename the current workspace	command-prompt -I "#S" "rename-session '%%'"	
-Workspaces	palette	—	Create a new workspace	command-prompt -p "new workspace name:" "new-session -s '%%'"	
+Workspaces	prefix	N	Create a new workspace	command-prompt -p "new workspace name:" "new-session -s '%%'"	
 Workspaces	shell	tmux ls	List all workspaces (sessions)		
 Workspaces	shell	tmux a -t NAME	Attach to a workspace by name		
 Tabs	prefix	t	New tab in the current directory	new-window -c "#{pane_current_path}"	

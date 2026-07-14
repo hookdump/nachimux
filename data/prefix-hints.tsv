@@ -3,6 +3,7 @@ workspaces	w	workspaces
 ws-next	)	next ws
 ws-prev	(	prev ws
 rename-ws	$	rename ws
+new-ws	N	new ws
 sidebar	b	sidebar
 detach	d	detach
 newtab	t	new tab
