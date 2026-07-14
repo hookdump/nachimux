@@ -30,7 +30,7 @@ Splits	prefix	o	Cycle to the next split	select-pane -t :.+
 Splits	palette	—	Layout: even horizontal	select-layout even-horizontal	
 Splits	palette	—	Layout: even vertical	select-layout even-vertical	
 Splits	palette	—	Layout: main vertical	select-layout main-vertical	
-Splits	palette	—	Rotate splits	rotate-window	
+Splits	prefix	O	Rotate splits	rotate-window	
 Copy / paste	prefix	Escape	Enter copy / scroll mode	copy-mode	
 Copy / paste	prefix	P	Paste the most recent buffer	paste-buffer	
 Copy / paste	copy	v	Start a selection (vi keys)		

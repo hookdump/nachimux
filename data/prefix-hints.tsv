@@ -24,6 +24,7 @@ even	e	even out
 breakpane	!	pop out
 killpane	x	close split
 nextpane	o	next split
+rotate	O	rotate
 copy	Esc	copy
 paste	P	paste
 save	C-s	save
