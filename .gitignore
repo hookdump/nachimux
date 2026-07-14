@@ -1,0 +1,9 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# scratch / test artifacts
+testing/
+
+# stray duplicate asset
+sounds/Copia de *

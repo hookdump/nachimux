@@ -1,0 +1,56 @@
+category	mode	keys	description	command	confirm
+Workspaces	prefix	w	Switch, create, rename or delete a workspace	choose-tree -Zs	
+Workspaces	prefix	)	Next workspace	switch-client -n	
+Workspaces	prefix	(	Previous workspace	switch-client -p	
+Workspaces	prefix	b	Toggle the workspace sidebar	run-shell "$NACHIMUX_ROOT/scripts/sidebar-toggle.sh"	
+Workspaces	prefix	d	Detach and leave everything running	detach-client	
+Workspaces	prefix	$	Rename the current workspace	command-prompt -I "#S" "rename-session '%%'"	
+Workspaces	palette	—	Create a new workspace	command-prompt -p "new workspace name:" "new-session -s '%%'"	
+Workspaces	shell	tmux ls	List all workspaces (sessions)		
+Workspaces	shell	tmux a -t NAME	Attach to a workspace by name		
+Tabs	prefix	t	New tab in the current directory	new-window -c "#{pane_current_path}"	
+Tabs	prefix	Tab	Next tab	next-window	
+Tabs	prefix	S-Tab	Previous tab (Shift+Tab)	previous-window	
+Tabs	prefix	1 … 9	Jump straight to a tab number		
+Tabs	prefix	,	Rename the current tab	command-prompt -I "#W" "rename-window '%%'"	
+Tabs	prefix	<	Move tab left	swap-window -t -1 \; previous-window	
+Tabs	prefix	>	Move tab right	swap-window -t +1 \; next-window	
+Tabs	prefix	X	Close the current tab	kill-window	Close this tab?
+Tabs	prefix	f	Find a tab by name	find-window	
+Splits	prefix	-	Split top / bottom in the current directory	split-window -v -c "#{pane_current_path}"	
+Splits	prefix	=	Split side by side in the current directory	split-window -h -c "#{pane_current_path}"	
+Splits	prefix	h j k l	Move between splits (vim style; arrows work too)		
+Splits	prefix	H J K L	Resize the split (hold Shift; repeatable)		
+Splits	prefix	z	Zoom or unzoom this split	resize-pane -Z	
+Splits	prefix	Space	Cycle through preset layouts	next-layout	
+Splits	prefix	e	Even out all splits	select-layout tiled	
+Splits	prefix	!	Pop this split into its own tab	break-pane	
+Splits	prefix	x	Close the current split	kill-pane	Close this split?
+Splits	prefix	o	Cycle to the next split	select-pane -t :.+	
+Splits	palette	—	Layout: even horizontal	select-layout even-horizontal	
+Splits	palette	—	Layout: even vertical	select-layout even-vertical	
+Splits	palette	—	Layout: main vertical	select-layout main-vertical	
+Splits	palette	—	Rotate splits	rotate-window	
+Copy / paste	prefix	Escape	Enter copy / scroll mode	copy-mode	
+Copy / paste	prefix	P	Paste the most recent buffer	paste-buffer	
+Copy / paste	copy	v	Start a selection (vi keys)		
+Copy / paste	copy	y	Copy selection to the system clipboard, then exit		
+Copy / paste	copy	/	Search forward		
+Copy / paste	copy	?	Search backward		
+Copy / paste	copy	n	Next search match		
+Copy / paste	copy	g	Jump to the top of the buffer		
+Copy / paste	copy	G	Jump to the bottom of the buffer		
+Copy / paste	copy	q	Quit copy mode		
+Plugins	prefix	C-s	Save all workspaces, tabs and splits	run-shell ~/.tmux/plugins/tmux-resurrect/scripts/save.sh	
+Plugins	prefix	C-r	Restore the last saved layout	run-shell ~/.tmux/plugins/tmux-resurrect/scripts/restore.sh	
+Plugins	prefix	I	Install plugins listed in the config	run-shell ~/.tmux/plugins/tpm/scripts/install_plugins.sh	
+Plugins	prefix	U	Update installed plugins	run-shell "~/.tmux/plugins/tpm/scripts/update_plugin.sh all"	
+Help & misc	prefix	p	Open the executable command palette		
+Help & misc	prefix	/	Open the searchable nachimux help	nachimux-help	
+Help & misc	prefix	r	Reload the tmux config	source-file ~/.tmux.conf	
+Help & misc	prefix	:	Open the tmux command prompt	command-prompt	
+Help & misc	prefix	?	List every key binding	list-keys	
+Help & misc	palette	—	Toggle mouse on or off	set -g mouse	
+Help & misc	palette	—	Show the big clock	clock-mode	
+Help & misc	shell	tmux source-file ~/.tmux.conf	Reload the config from the shell		
+Help & misc	palette	—	Customize the prefix hint bar (pin/unpin shortcuts)	nachimux-pins	

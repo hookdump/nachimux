@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Guía visual de nachimux: instala, aprende y usa tmux con workspaces, tabs y splits.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><rect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%238839ef%22/><path d=%22M20 16l18 16-18 16%22 fill=%22none%22 stroke=%22white%22 stroke-width=%228%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/></svg>">
+<title>nachimux — tmux, explicado fácil</title>
+<style>
+  /* ── Catppuccin: Mocha (dark) / Latte (light) as design tokens ───────── */
+  :root {
+    --base:#eff1f5; --mantle:#e6e9ef; --crust:#dce0e8;
+    --surface0:#ccd0da; --surface1:#bcc0cc; --surface2:#acb0be;
+    --text:#4c4f69; --subtext:#6c6f85; --overlay:#8c8fa1;
+    --mauve:#8839ef; --blue:#1e66f5; --green:#40a02b; --peach:#fe640b;
+    --yellow:#df8e1d; --red:#d20f39; --teal:#179299; --pink:#ea76cb;
+    --shadow: 0 1px 2px rgba(76,79,105,.10), 0 8px 30px rgba(76,79,105,.10);
+    --ring: rgba(136,57,239,.35);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --base:#1e1e2e; --mantle:#181825; --crust:#11111b;
+      --surface0:#313244; --surface1:#45475a; --surface2:#585b70;
+      --text:#cdd6f4; --subtext:#a6adc8; --overlay:#6c7086;
+      --mauve:#cba6f7; --blue:#89b4fa; --green:#a6e3a1; --peach:#fab387;
+      --yellow:#f9e2af; --red:#f38ba8; --teal:#94e2d5; --pink:#f5c2e7;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 14px 40px rgba(0,0,0,.45);
+      --ring: rgba(203,166,247,.4);
+    }
+  }
+  /* explicit toggle overrides (viewer's theme switch stamps data-theme) */
+  :root[data-theme="light"] {
+    --base:#eff1f5; --mantle:#e6e9ef; --crust:#dce0e8;
+    --surface0:#ccd0da; --surface1:#bcc0cc; --surface2:#acb0be;
+    --text:#4c4f69; --subtext:#6c6f85; --overlay:#8c8fa1;
+    --mauve:#8839ef; --blue:#1e66f5; --green:#40a02b; --peach:#fe640b;
+    --yellow:#df8e1d; --red:#d20f39; --teal:#179299; --pink:#ea76cb;
+    --shadow: 0 1px 2px rgba(76,79,105,.10), 0 8px 30px rgba(76,79,105,.10);
+    --ring: rgba(136,57,239,.35);
+  }
+  :root[data-theme="dark"] {
+    --base:#1e1e2e; --mantle:#181825; --crust:#11111b;
+    --surface0:#313244; --surface1:#45475a; --surface2:#585b70;
+    --text:#cdd6f4; --subtext:#a6adc8; --overlay:#6c7086;
+    --mauve:#cba6f7; --blue:#89b4fa; --green:#a6e3a1; --peach:#fab387;
+    --yellow:#f9e2af; --red:#f38ba8; --teal:#94e2d5; --pink:#f5c2e7;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 14px 40px rgba(0,0,0,.45);
+    --ring: rgba(203,166,247,.4);
+  }
+
+  :root {
+    --font-mono: ui-monospace, "SF Mono", SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+    --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin:0; background:var(--base); color:var(--text);
+    overflow-x:hidden;
+    font-family: var(--font-sans);
+    font-size:16px; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    background-image:
+      radial-gradient(60rem 40rem at 80% -10%, color-mix(in oklab, var(--mauve) 10%, transparent), transparent),
+      radial-gradient(50rem 30rem at -10% 10%, color-mix(in oklab, var(--blue) 8%, transparent), transparent);
+    background-attachment: fixed;
+  }
+  .wrap { max-width: 960px; margin:0 auto; padding: 0 24px 96px; }
+
+  /* navigation */
+  .skip { position:fixed; left:16px; top:-80px; z-index:20; background:var(--mauve); color:var(--crust); padding:8px 12px; border-radius:8px; }
+  .skip:focus { top:12px; }
+  .nav-shell { position:sticky; top:0; z-index:10; padding:12px 20px 0; }
+  .nav {
+    max-width:960px; margin:0 auto; padding:9px 10px 9px 14px;
+    display:flex; align-items:center; gap:18px; border:1px solid color-mix(in oklab,var(--surface1) 75%,transparent);
+    border-radius:12px; background:color-mix(in oklab,var(--base) 82%,transparent);
+    box-shadow:var(--shadow); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+  }
+  .brand { margin-right:auto; color:var(--text); text-decoration:none; font-family:var(--font-mono); font-weight:800; }
+  .brand::before { content:'❯'; color:var(--mauve); margin-right:.55ch; }
+  .nav-links { display:flex; gap:15px; }
+  .nav-links a { color:var(--subtext); text-decoration:none; font-family:var(--font-mono); font-size:.76rem; }
+  .nav-links a:hover { color:var(--mauve); }
+  .theme-toggle { border:1px solid var(--surface1); background:var(--surface0); color:var(--text); border-radius:8px; min-width:36px; min-height:32px; cursor:pointer; font-size:.9rem; }
+
+  /* typography */
+  h1,h2,h3 { font-family: var(--font-mono); font-weight:700; text-wrap:balance; letter-spacing:-.01em; }
+  h2 {
+    font-size: clamp(1.15rem, 1rem + 1vw, 1.5rem);
+    text-transform: uppercase; letter-spacing:.14em; font-weight:700;
+    color: var(--text); margin: 0 0 4px;
+    display:flex; align-items:center; gap:12px;
+  }
+  h2 .sec-no { color: var(--overlay); font-size:.8em; }
+  h3 { font-size:1.02rem; margin:0 0 6px; }
+  p { margin: 0 0 14px; max-width: 68ch; }
+  .lead { color: var(--subtext); font-size: 1.08rem; max-width: 60ch; }
+  code, kbd, .mono { font-family: var(--font-mono); }
+  a { color: var(--mauve); text-underline-offset: 3px; }
+
+  section { margin-top: 64px; }
+  .eyebrow {
+    font-family:var(--font-mono); text-transform:uppercase;
+    letter-spacing:.22em; font-size:.72rem; color:var(--overlay);
+  }
+  .divider { height:1px; background:linear-gradient(90deg, var(--surface1), transparent); border:0; margin:0; }
+
+  /* ── keycaps ─────────────────────────────────────────────────────────── */
+  .k {
+    font-family:var(--font-mono); font-size:.82em; font-weight:600;
+    display:inline-flex; align-items:center; justify-content:center;
+    min-width: 1.9em; padding: .18em .5em;
+    background: var(--surface0); color: var(--text);
+    border: 1px solid var(--surface2);
+    border-bottom-width: 2px; border-radius: 7px;
+    box-shadow: 0 1px 0 color-mix(in oklab, var(--crust) 60%, transparent);
+    white-space:nowrap; line-height:1.2;
+  }
+  .plus { color: var(--overlay); font-family:var(--font-mono); margin:0 .28em; font-size:.82em; }
+  .combo { display:inline-flex; align-items:center; white-space:nowrap; }
+  kbd.pfx { color: var(--mauve); border-color: color-mix(in oklab, var(--mauve) 50%, var(--surface2)); }
+
+  /* ── hero ────────────────────────────────────────────────────────────── */
+  header.hero { padding-top: 72px; }
+  .hero .eyebrow { animation: fade .6s ease both; }
+  .hero h1 {
+    font-size: clamp(2.1rem, 1.4rem + 3.4vw, 3.4rem);
+    line-height:1.04; margin:.35em 0 .3em;
+    animation: rise .6s .05s ease both;
+  }
+  .hero h1 .cur {
+    display:inline-block; width:.6ch; height:1.05em; transform:translateY(.14em);
+    background: var(--mauve); margin-left:.12em; border-radius:2px;
+    animation: blink 1.1s steps(1) infinite;
+  }
+  .hero .lead { animation: rise .6s .12s ease both; }
+
+  /* top-bar mock */
+  .bar-frame {
+    margin: 30px 0 6px; border-radius: 14px; overflow:hidden;
+    border:1px solid var(--surface1); background: var(--mantle);
+    box-shadow: var(--shadow); animation: rise .7s .18s ease both;
+  }
+  .bar {
+    display:flex; align-items:center; gap:10px;
+    background: color-mix(in oklab, var(--crust) 82%, var(--base));
+    padding: 9px 12px; font-family:var(--font-mono); font-size:.82rem;
+    overflow-x:auto;
+  }
+  .ws {
+    display:inline-flex; align-items:center; gap:.5ch;
+    background: var(--green); color: var(--crust);
+    font-weight:700; padding:.28em .7em; border-radius:8px; white-space:nowrap;
+  }
+  .tabs { display:flex; gap:7px; margin:0 auto; padding:0 8px; }
+  .tab {
+    display:inline-flex; align-items:center; gap:.6ch;
+    background: var(--surface0); color: var(--subtext);
+    padding:.28em .7em .28em .8em; border-radius:8px; white-space:nowrap;
+  }
+  .tab .n { color: var(--overlay); font-size:.85em; }
+  .tab.active { background: var(--mauve); color: var(--crust); font-weight:700; }
+  .tab.active .n { color: color-mix(in oklab, var(--crust) 70%, var(--mauve)); }
+  .meters { display:flex; gap:7px; white-space:nowrap; }
+  .meter { display:inline-flex; align-items:center; gap:.5ch; padding:.28em .6em; border-radius:8px; background: var(--surface0); color: var(--subtext); }
+  .meter.clock { background: var(--peach); color: var(--crust); font-weight:700; }
+  .bar-caption { font-family:var(--font-mono); font-size:.74rem; color:var(--overlay); text-align:center; margin: 8px 0 0; }
+  .bar-caption b { color:var(--subtext); font-weight:600; }
+
+  /* ── command palette (featured) ──────────────────────────────────────── */
+  .feature {
+    background:
+      linear-gradient(180deg, color-mix(in oklab, var(--mauve) 8%, var(--mantle)), var(--mantle));
+    border:1px solid color-mix(in oklab, var(--mauve) 32%, var(--surface0));
+    border-radius:16px; padding:26px; box-shadow:var(--shadow);
+    display:grid; grid-template-columns: 1.05fr 1fr; gap:28px; align-items:center; margin-top:22px;
+  }
+  .feature .tag { display:inline-block; font-family:var(--font-mono); font-size:.68rem; letter-spacing:.18em; text-transform:uppercase; color:var(--crust); background:var(--mauve); padding:.28em .6em; border-radius:6px; font-weight:700; }
+  .feature h3 { font-size:1.35rem; margin:.5em 0 .3em; }
+  .feature p { font-size:.94rem; color:var(--subtext); margin:0 0 12px; }
+  .pal-frame { background:var(--crust); border:1px solid var(--surface1); border-radius:12px; overflow:hidden; box-shadow: 0 18px 46px rgba(0,0,0,.28); }
+  .pal-head { font-family:var(--font-mono); font-size:.72rem; color:var(--overlay); text-align:center; padding:6px; border-bottom:1px solid var(--surface0); background:var(--mantle); }
+  .pal-prompt { font-family:var(--font-mono); font-size:.86rem; padding:11px 14px; color:var(--text); border-bottom:1px solid var(--surface0); }
+  .pal-prompt .p { color:var(--mauve); }
+  .pal-prompt .typed { color:var(--text); }
+  .pal-prompt .cur { display:inline-block; width:.55ch; height:1em; transform:translateY(.14em); background:var(--mauve); margin-left:1px; animation: blink 1.1s steps(1) infinite; }
+  .pal-list { padding:6px; font-family:var(--font-mono); font-size:.82rem; }
+  .pal-item { display:flex; gap:.7ch; padding:.42em .6em; border-radius:7px; color:var(--subtext); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pal-item .ptr { width:1ch; color:transparent; }
+  .pal-item.sel { background:var(--surface0); color:var(--text); }
+  .pal-item.sel .ptr { color:var(--pink); }
+  .pal-item .hit { color:var(--mauve); font-weight:700; }
+  .pal-item .pk { color:var(--mauve); font-weight:700; min-width:8.5ch; }
+  .pal-item .pk.pdim { color:var(--overlay); font-weight:400; }
+  @media (max-width:720px){ .feature { grid-template-columns:1fr; } }
+
+  /* quick install */
+  .install-grid { display:grid; grid-template-columns:1.1fr .9fr; gap:16px; margin-top:22px; }
+  .install-card { background:var(--mantle); border:1px solid var(--surface0); border-radius:14px; padding:20px; box-shadow:var(--shadow); }
+  .install-card h3 { font-size:.95rem; color:var(--text); }
+  .install-card p { color:var(--subtext); font-size:.9rem; }
+  .cmd { display:flex; align-items:center; gap:12px; background:var(--crust); border:1px solid var(--surface0); border-radius:9px; padding:11px 12px; margin-top:10px; }
+  .cmd code { min-width:0; overflow:auto; white-space:nowrap; font-size:.8rem; flex:1; }
+  .copy { border:1px solid var(--surface1); background:var(--surface0); color:var(--subtext); border-radius:7px; padding:5px 8px; cursor:pointer; font-family:var(--font-mono); font-size:.7rem; }
+  .copy:hover { color:var(--mauve); border-color:var(--mauve); }
+  .checklist { list-style:none; margin:12px 0 0; padding:0; display:grid; gap:8px; }
+  .checklist li { color:var(--subtext); font-size:.88rem; }
+  .checklist li::before { content:'✓'; color:var(--green); font-family:var(--font-mono); font-weight:800; margin-right:9px; }
+  @media (max-width:720px){ .install-grid { grid-template-columns:1fr; } }
+
+  /* ── workspace sidebar figure ────────────────────────────────────────── */
+  .sb-wrap { display:grid; grid-template-columns: 220px 1fr; gap:26px; align-items:center; margin-top:22px; }
+  .sb-term { display:flex; background:var(--crust); border:1px solid var(--surface1); border-radius:12px; overflow:hidden; box-shadow:var(--shadow); font-family:var(--font-mono); font-size:.78rem; min-height:210px; }
+  .sb-col { width:118px; flex:none; background:var(--mantle); border-right:1px solid var(--surface0); padding:10px 0; }
+  .sb-title { color:var(--mauve); font-weight:700; padding:0 10px 8px; }
+  .sb-ws { padding:.25em 10px; color:var(--overlay); }
+  .sb-ws.cur { color:var(--mauve); font-weight:700; background:var(--surface0); }
+  .sb-tab { padding:.2em 10px .2em 22px; color:var(--subtext); }
+  .sb-tab .n { color:var(--overlay); }
+  .sb-tab.act .n { color:var(--peach); font-weight:700; }
+  .sb-tab.act { color:var(--text); }
+  .sb-main { flex:1; padding:12px 14px; color:var(--subtext); }
+  .sb-main .pr { color:var(--green); }
+  @media (max-width:720px){ .sb-wrap { grid-template-columns:1fr; } }
+
+  /* ── hierarchy cards ─────────────────────────────────────────────────── */
+  .tiers { display:grid; grid-template-columns: repeat(3, 1fr); gap:16px; margin-top:24px; }
+  .tier {
+    background: var(--mantle); border:1px solid var(--surface0);
+    border-top: 3px solid var(--tc); border-radius: 12px; padding: 18px 18px 16px;
+    box-shadow: var(--shadow);
+  }
+  .tier .role { font-family:var(--font-mono); text-transform:uppercase; letter-spacing:.16em; font-size:.68rem; color:var(--tc); font-weight:700; }
+  .tier h3 { margin:.15em 0 .1em; }
+  .tier .is { font-size:.86rem; color:var(--subtext); margin:0 0 12px; }
+  .tier ul { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:9px; }
+  .tier li { display:flex; align-items:baseline; gap:10px; font-size:.9rem; }
+  .tier li .d { color:var(--subtext); }
+  .t-ws { --tc: var(--green); }
+  .t-tab { --tc: var(--blue); }
+  .t-split { --tc: var(--peach); }
+
+  /* ── keymap tables ───────────────────────────────────────────────────── */
+  .maps { display:grid; grid-template-columns: repeat(2, 1fr); gap: 16px 28px; margin-top: 22px; }
+  .map { background: var(--mantle); border:1px solid var(--surface0); border-radius:12px; padding: 16px 18px; box-shadow:var(--shadow); }
+  .map h3 { font-family:var(--font-mono); text-transform:uppercase; letter-spacing:.12em; font-size:.8rem; color:var(--text); margin:0 0 12px; padding-bottom:10px; border-bottom:1px solid var(--surface0); display:flex; align-items:center; gap:8px; }
+  .map h3 .dot { width:8px; height:8px; border-radius:50%; background:var(--mc); box-shadow:0 0 0 3px color-mix(in oklab, var(--mc) 22%, transparent); }
+  .row { display:grid; grid-template-columns: minmax(0,auto) 1fr; gap: 6px 14px; align-items:center; padding:5px 0; }
+  .row + .row { border-top:1px dashed color-mix(in oklab, var(--surface1) 60%, transparent); }
+  .row .desc { color: var(--subtext); font-size:.88rem; }
+  .m-ws{--mc:var(--green);} .m-tab{--mc:var(--blue);} .m-split{--mc:var(--peach);}
+  .m-copy{--mc:var(--teal);} .m-plug{--mc:var(--mauve);}
+
+  /* ── plugins ─────────────────────────────────────────────────────────── */
+  .plugins { display:grid; grid-template-columns: repeat(2,1fr); gap:12px; margin-top:20px; }
+  .plug { display:flex; gap:12px; background:var(--mantle); border:1px solid var(--surface0); border-radius:10px; padding:13px 15px; }
+  .plug .badge { font-family:var(--font-mono); font-weight:700; font-size:.8rem; color:var(--crust); background:var(--mauve); border-radius:7px; padding:.2em .5em; height:fit-content; white-space:nowrap; }
+  .plug .name { font-family:var(--font-mono); font-size:.86rem; color:var(--text); font-weight:600; }
+  .plug .what { font-size:.85rem; color:var(--subtext); margin-top:2px; }
+
+  /* ── quickstart ──────────────────────────────────────────────────────── */
+  .steps { counter-reset: s; display:flex; flex-direction:column; gap:14px; margin-top:22px; }
+  .step { display:grid; grid-template-columns: auto 1fr; gap:16px; align-items:start; }
+  .step::before {
+    counter-increment: s; content: counter(s);
+    font-family:var(--font-mono); font-weight:700; font-size:.95rem;
+    width:2rem; height:2rem; display:grid; place-items:center;
+    color:var(--mauve); background: color-mix(in oklab, var(--mauve) 14%, var(--mantle));
+    border:1px solid color-mix(in oklab, var(--mauve) 40%, var(--surface0)); border-radius:50%;
+  }
+  .step .body { padding-top:.15em; }
+  .step .body p { margin:.15em 0 0; color:var(--subtext); font-size:.92rem; }
+
+  /* code block */
+  pre {
+    background: var(--crust); color: var(--text); border:1px solid var(--surface0);
+    border-radius:10px; padding:14px 16px; overflow-x:auto; font-size:.84rem;
+    font-family:var(--font-mono); line-height:1.55; margin:10px 0 0;
+  }
+  pre .c { color: var(--overlay); }
+  pre .g { color: var(--green); }
+
+  /* footer / files */
+  .files { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:20px; }
+  .file { background:var(--mantle); border:1px solid var(--surface0); border-radius:10px; padding:12px 14px; }
+  .file .path { font-family:var(--font-mono); font-size:.82rem; color:var(--blue); }
+  .file .note { font-size:.82rem; color:var(--subtext); margin-top:3px; }
+  .callout {
+    margin-top:20px; display:flex; gap:12px; align-items:flex-start;
+    background: color-mix(in oklab, var(--yellow) 12%, var(--mantle));
+    border:1px solid color-mix(in oklab, var(--yellow) 40%, var(--surface0));
+    border-radius:10px; padding:13px 15px; font-size:.9rem;
+  }
+  .callout .ic { color:var(--yellow); font-weight:700; font-family:var(--font-mono); }
+  footer { margin-top:80px; padding-top:24px; border-top:1px solid var(--surface0); color:var(--overlay); font-size:.82rem; font-family:var(--font-mono); }
+
+  a:focus-visible, .tab:focus-visible { outline:2px solid var(--ring); outline-offset:3px; border-radius:6px; }
+
+  @keyframes rise { from { opacity:0; transform: translateY(12px);} to {opacity:1; transform:none;} }
+  @keyframes fade { from { opacity:0;} to {opacity:1;} }
+  @keyframes blink { 0%,50%{opacity:1;} 51%,100%{opacity:0;} }
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after { animation:none !important; transition:none !important; }
+    html { scroll-behavior:auto; }
+  }
+  @media (max-width: 720px) {
+    .tiers, .maps, .plugins, .files { grid-template-columns: 1fr; }
+    .tabs { margin: 0; }
+    .nav-links { display:none; }
+    .nav-shell { padding:8px 12px 0; }
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#content">Saltar al contenido</a>
+<div class="nav-shell">
+  <nav class="nav" aria-label="Navegación principal">
+    <a class="brand" href="#top">nachimux</a>
+    <div class="nav-links">
+      <a href="#install">Instalar</a>
+      <a href="#keys">Atajos</a>
+      <a href="#cli">CLI</a>
+    </div>
+    <button class="theme-toggle" type="button" aria-label="Cambiar tema" title="Cambiar tema">◐</button>
+  </nav>
+</div>
+
+<main class="wrap" id="content">
+
+  <!-- ─────────────────────────── HERO ─────────────────────────── -->
+  <header class="hero" id="top">
+    <div class="eyebrow">nachimux · tmux 3.7 · catppuccin mocha · prefix C-b</div>
+    <h1>Tu tmux, fácil de usar.<span class="cur"></span></h1>
+    <p class="lead">Una configuración amigable para teclado español. La barra vive arriba y
+    todo se organiza en tres niveles que ya conoces de cualquier navegador:
+    <b>workspaces</b>, <b>tabs</b> y <b>splits</b>.</p>
+
+    <div class="bar-frame" role="img" aria-label="Mock of the tmux top bar: a green workspace pill on the left, three centered tabs with the second active, and CPU, battery and clock on the right.">
+      <div class="bar">
+        <span class="ws">◆ nachimux</span>
+        <div class="tabs">
+          <span class="tab">editor <span class="n">1</span></span>
+          <span class="tab active">server <span class="n">2</span></span>
+          <span class="tab">logs <span class="n">3</span></span>
+        </div>
+        <div class="meters">
+          <span class="meter">CPU 12%</span>
+          <span class="meter">BAT 85%</span>
+          <span class="meter clock">17:09</span>
+        </div>
+      </div>
+    </div>
+    <p class="bar-caption">
+      <b>izquierda</b> = workspace &nbsp;·&nbsp; <b>centro</b> = tabs &nbsp;·&nbsp; <b>derecha</b> = cpu / batería / hora
+    </p>
+  </header>
+
+  <!-- ─────────────────────── THE ONE KEY ──────────────────────── -->
+  <section id="prefix">
+    <div class="eyebrow">la única tecla que debes recordar</div>
+    <h2><span class="sec-no">00</span> El prefix</h2>
+    <p>Casi todos los atajos empiezan con el <b>prefix</b>: lo presionas, lo sueltas y recién
+    entonces presionas la tecla siguiente. nachimux usa el estándar de tmux:
+    <span class="combo"><kbd class="k pfx">Ctrl</kbd><span class="plus">+</span><kbd class="k pfx">b</kbd></span>.</p>
+    <p style="color:var(--subtext); font-size:.94rem">Cuando esta guía dice
+      <span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">w</kbd></span>
+      significa: presiona <span class="mono">Ctrl+b</span>, suelta ambas teclas y luego presiona <span class="mono">w</span>. No hay que mantener todo apretado a la vez.</p>
+  </section>
+
+  <!-- ─────────────────────── INSTALL ─────────────────────────── -->
+  <section id="install">
+    <div class="eyebrow">de cero a listo</div>
+    <h2><span class="sec-no">01</span> Instalación rápida</h2>
+    <p>El instalador activa este perfil sin pisar archivos ajenos. Después, el doctor te dice
+    exactamente qué falta.</p>
+    <div class="install-grid">
+      <div class="install-card">
+        <h3>1. Dependencias</h3>
+        <p>En macOS, instala tmux y las pequeñas herramientas de la interfaz.</p>
+        <div class="cmd"><code>brew install tmux gum fzf zoxide</code><button class="copy" data-copy="brew install tmux gum fzf zoxide">copiar</button></div>
+        <h3 style="margin-top:20px">2. Activar nachimux</h3>
+        <div class="cmd"><code>./nachimux setup</code><button class="copy" data-copy="./nachimux setup">copiar</button></div>
+        <div class="cmd"><code>nachimux doctor</code><button class="copy" data-copy="nachimux doctor">copiar</button></div>
+      </div>
+      <div class="install-card">
+        <h3>¿Qué hace setup?</h3>
+        <ul class="checklist">
+          <li>Enlaza el comando en <code>~/.local/bin</code>.</li>
+          <li>Activa el perfil desde <code>~/.tmux.conf</code>.</li>
+          <li>Recarga tmux si ya está abierto.</li>
+          <li>No reemplaza archivos que no reconoce.</li>
+        </ul>
+        <p style="margin-top:16px">Los plugins se instalan una sola vez con TPM. Dentro de tmux:
+        <span class="combo"><kbd class="k pfx">Ctrl</kbd><span class="plus">+</span><kbd class="k pfx">b</kbd></span>, suelta, y luego <kbd class="k">I</kbd>.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────── COMMAND PALETTE ──────────────────── -->
+  <section id="palette">
+    <div class="eyebrow">el atajo para todos los atajos</div>
+    <h2><span class="sec-no">★</span> La paleta de comandos</h2>
+    <p>¿No recuerdas una tecla? No pasa nada. Presiona <span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">p</kbd></span>
+    y aparece un buscador. Escribe lo que quieres — <span class="mono">split</span>,
+    <span class="mono">new tab</span>, <span class="mono">zoom</span>, <span class="mono">rename</span> — y Enter lo ejecuta.</p>
+
+    <div class="feature">
+      <div>
+        <span class="tag">prefix p</span>
+        <h3>Búscalo y ejecútalo</h3>
+        <p>Aquí viven las acciones comunes, agrupadas por categoría. Cada fila muestra su
+        atajo y Enter la ejecuta. Cerrar una tab o un split siempre pide confirmación.</p>
+        <p style="margin:0">La paleta y <code>nachimux</code> leen el mismo registro. Para consultar
+        sin ejecutar, usa <span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">/</kbd></span>.</p>
+      </div>
+      <div class="pal-frame" role="img" aria-label="Mock of the command palette popup: a search prompt reading 'do › spl' with a filtered list. Each row shows its keybinding on the left, e.g. 'prefix =' next to 'Split → side by side', which is highlighted.">
+        <div class="pal-head"> nachimux · palette </div>
+        <div class="pal-prompt"><span class="p">  do › </span><span class="typed">spl</span><span class="cur"></span></div>
+        <div class="pal-list">
+          <div class="pal-item sel"><span class="ptr">▶</span><span class="pk">prefix =</span><span><span class="hit">Spl</span>it → side by side</span></div>
+          <div class="pal-item"><span class="ptr">▶</span><span class="pk">prefix -</span><span><span class="hit">Spl</span>it → top / bottom</span></div>
+          <div class="pal-item"><span class="ptr">▶</span><span class="pk">prefix e</span><span>Balance panes (tiled)</span></div>
+          <div class="pal-item"><span class="ptr">▶</span><span class="pk pdim">palette</span><span>Rotate panes</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────── THREE LEVELS ─────────────────────── -->
+  <section id="model">
+    <div class="eyebrow">el modelo mental</div>
+    <h2><span class="sec-no">02</span> Tres niveles</h2>
+    <p>tmux contiene tres tipos de objetos. nachimux los presenta como conceptos familiares para
+    que siempre sepas en qué nivel estás trabajando.</p>
+
+    <div class="tiers">
+      <div class="tier t-ws">
+        <div class="role">● Workspace</div>
+        <h3>Un contexto completo</h3>
+        <p class="is">tmux lo llama <i>session</i>. Idealmente uno por proyecto. Aparece a la izquierda.</p>
+        <ul>
+          <li><span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">w</kbd></span></li>
+          <li><span class="d">Buscar / crear / renombrar / eliminar</span></li>
+        </ul>
+      </div>
+      <div class="tier t-tab">
+        <div class="role">● Tab</div>
+        <h3>Una pantalla del workspace</h3>
+        <p class="is">tmux lo llama <i>window</i>. Son las pestañas centradas en la barra superior.</p>
+        <ul>
+          <li><span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">t</kbd></span></li>
+          <li><span class="d">Nueva tab; <kbd class="k">Tab</kbd> para avanzar</span></li>
+        </ul>
+      </div>
+      <div class="tier t-split">
+        <div class="role">● Split</div>
+        <h3>Un panel dentro de una tab</h3>
+        <p class="is">tmux lo llama <i>pane</i>. Permite tener dos shells lado a lado.</p>
+        <ul>
+          <li><span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">=</kbd></span> <span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">-</kbd></span></li>
+          <li><span class="d">Lado a lado / arriba y abajo</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────── SIDEBAR ──────────────────────────── -->
+  <section id="sidebar">
+    <div class="eyebrow">todo a la vista</div>
+    <h2><span class="sec-no">★</span> El sidebar de workspaces</h2>
+    <p>Presiona <span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">b</kbd></span>
+    para mostrar una columna con todos los workspaces. El actual se expande y muestra sus tabs.
+    <b>Puedes hacer click en cualquier fila para saltar allí</b>. Vuelve a presionar
+    <kbd class="k">prefix</kbd> <kbd class="k">b</kbd> para ocultarlo.</p>
+
+    <div class="sb-wrap">
+      <div class="sb-term" role="img" aria-label="Mock of the workspace sidebar: a left column titled WORKSPACES listing dev (current, expanded into tabs 1 editor, 2 server active, 3 logs), then api and notes; the main area on the right shows a shell.">
+        <div class="sb-col">
+          <div class="sb-title">◆ WORKSPACES</div>
+          <div class="sb-ws cur">▸ dev</div>
+          <div class="sb-tab"><span class="n">1</span> editor</div>
+          <div class="sb-tab act"><span class="n">2</span> server</div>
+          <div class="sb-tab"><span class="n">3</span> logs</div>
+          <div class="sb-ws">api <span style="color:var(--overlay)">(1)</span></div>
+          <div class="sb-ws">notes <span style="color:var(--overlay)">(2)</span></div>
+        </div>
+        <div class="sb-main"><span class="pr">~/dev/app ❯</span> nvim src/app.ts</div>
+      </div>
+      <div>
+        <h3 style="font-family:var(--font-mono); font-size:1rem; margin:0 0 8px">Un mapa vivo de tu trabajo</h3>
+        <p style="font-size:.92rem; color:var(--subtext); margin:0 0 10px">Se actualiza solo, marca dónde estás y acepta clicks.
+        Si prefieres el teclado, el buscador
+        (<span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">w</kbd></span>) siempre está disponible.</p>
+        <p style="font-size:.86rem; color:var(--overlay); margin:0">Ocupa unas 22 columnas y se abre automáticamente en cada workspace nuevo.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────── KEYMAPS ──────────────────────────── -->
+  <section id="keys">
+    <div class="eyebrow">todo, ordenado por nivel</div>
+    <h2><span class="sec-no">03</span> Mapa de atajos</h2>
+    <p>Todos los atajos siguientes empiezan con <span class="combo"><kbd class="k pfx">prefix</kbd></span>
+      (<span class="mono">Ctrl+b</span>) salvo que se indique lo contrario.</p>
+
+    <div class="maps">
+
+      <!-- Workspaces -->
+      <div class="map m-ws">
+        <h3><span class="dot"></span> Workspaces</h3>
+        <div class="row"><span class="combo"><kbd class="k">w</kbd></span><span class="desc">Buscar / crear / renombrar / cerrar</span></div>
+        <div class="row"><span class="combo"><kbd class="k">)</kbd></span><span class="desc">Workspace siguiente</span></div>
+        <div class="row"><span class="combo"><kbd class="k">(</kbd></span><span class="desc">Workspace anterior</span></div>
+        <div class="row"><span class="combo"><kbd class="k">$</kbd></span><span class="desc">Renombrar el workspace actual</span></div>
+        <div class="row"><span class="combo"><kbd class="k">b</kbd></span><span class="desc">Mostrar / ocultar el sidebar</span></div>
+        <div class="row"><span class="combo"><kbd class="k">d</kbd></span><span class="desc">Salir y dejar todo ejecutándose</span></div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="map m-tab">
+        <h3><span class="dot"></span> Tabs</h3>
+        <div class="row"><span class="combo"><kbd class="k">t</kbd></span><span class="desc">Nueva tab (en la carpeta actual)</span></div>
+        <div class="row"><span class="combo"><kbd class="k">Tab</kbd></span><span class="desc">Tab siguiente</span></div>
+        <div class="row"><span class="combo"><kbd class="k">⇧</kbd><span class="plus">+</span><kbd class="k">Tab</kbd></span><span class="desc">Tab anterior</span></div>
+        <div class="row"><span class="combo"><kbd class="k">1</kbd>…<kbd class="k">9</kbd></span><span class="desc">Saltar a una tab por número</span></div>
+        <div class="row"><span class="combo"><kbd class="k">,</kbd></span><span class="desc">Renombrar tab</span></div>
+        <div class="row"><span class="combo"><kbd class="k">&lt;</kbd> <kbd class="k">&gt;</kbd></span><span class="desc">Mover tab a izquierda / derecha</span></div>
+        <div class="row"><span class="combo"><kbd class="k">X</kbd></span><span class="desc">Cerrar tab</span></div>
+      </div>
+
+      <!-- Splits -->
+      <div class="map m-split">
+        <h3><span class="dot"></span> Splits</h3>
+        <div class="row"><span class="combo"><kbd class="k">=</kbd></span><span class="desc">Split lado a lado</span></div>
+        <div class="row"><span class="combo"><kbd class="k">-</kbd></span><span class="desc">Split arriba / abajo</span></div>
+        <div class="row"><span class="combo"><kbd class="k">h</kbd><kbd class="k">j</kbd><kbd class="k">k</kbd><kbd class="k">l</kbd></span><span class="desc">Moverse entre splits (también flechas)</span></div>
+        <div class="row"><span class="combo"><kbd class="k">H</kbd><kbd class="k">J</kbd><kbd class="k">K</kbd><kbd class="k">L</kbd></span><span class="desc">Redimensionar el split</span></div>
+        <div class="row"><span class="combo"><kbd class="k">z</kbd></span><span class="desc">Zoom / pantalla completa</span></div>
+        <div class="row"><span class="combo"><kbd class="k">Space</kbd></span><span class="desc">Cambiar layout &nbsp;·&nbsp; <kbd class="k">e</kbd> equilibrarlos</span></div>
+        <div class="row"><span class="combo"><kbd class="k">!</kbd></span><span class="desc">Convertir split en su propia tab</span></div>
+        <div class="row"><span class="combo"><kbd class="k">x</kbd></span><span class="desc">Cerrar este split</span></div>
+      </div>
+
+      <!-- Copy / paste -->
+      <div class="map m-copy">
+        <h3><span class="dot"></span> Copiar y pegar <span style="color:var(--overlay); font-weight:400; letter-spacing:0; font-size:.72rem; text-transform:none">· sin AltGr</span></h3>
+        <div class="row"><span class="combo"><kbd class="k">Esc</kbd></span><span class="desc">Entrar al modo copiar / scroll</span></div>
+        <div class="row"><span class="combo"><kbd class="k">v</kbd></span><span class="desc">Empezar selección &nbsp;<span style="color:var(--overlay)">(en modo copiar)</span></span></div>
+        <div class="row"><span class="combo"><kbd class="k">y</kbd></span><span class="desc">Copiar al portapapeles y salir</span></div>
+        <div class="row"><span class="combo"><kbd class="k">/</kbd></span><span class="desc">Buscar &nbsp;·&nbsp; <kbd class="k">n</kbd> siguiente resultado</span></div>
+        <div class="row"><span class="combo"><kbd class="k">P</kbd></span><span class="desc">Pegar (de vuelta en modo normal)</span></div>
+      </div>
+
+      <!-- Plugins / session -->
+      <div class="map m-plug" style="grid-column:1 / -1">
+        <h3><span class="dot"></span> Guardar, restaurar y plugins</h3>
+        <div class="row"><span class="combo"><kbd class="k">Ctrl</kbd><span class="plus">+</span><kbd class="k">s</kbd></span><span class="desc">Guardar workspaces / tabs / splits (resurrect)</span></div>
+        <div class="row"><span class="combo"><kbd class="k">Ctrl</kbd><span class="plus">+</span><kbd class="k">r</kbd></span><span class="desc">Restaurar el último layout guardado</span></div>
+        <div class="row"><span class="combo"><kbd class="k">I</kbd></span><span class="desc">Instalar los plugins del perfil</span></div>
+        <div class="row"><span class="combo"><kbd class="k">U</kbd></span><span class="desc">Actualizar plugins instalados</span></div>
+        <div class="row"><span class="combo"><kbd class="k">r</kbd></span><span class="desc">Recargar el perfil después de editarlo</span></div>
+      </div>
+
+    </div>
+
+    <div class="callout">
+      <span class="ic">↺</span>
+      <div>Las sesiones <b>se guardan cada 15 minutos y se restauran al iniciar</b> (continuum).
+      Reinicia y tus workspaces, tabs y splits vuelven solos.</div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────── PLUGINS ──────────────────────────── -->
+  <section id="plugins">
+    <div class="eyebrow">qué hace funcionar cada cosa</div>
+    <h2><span class="sec-no">04</span> Los plugins</h2>
+    <div class="plugins">
+      <div class="plug"><span class="badge">tema</span><div><div class="name">catppuccin/tmux</div><div class="what">Estilo Mocha, tabs redondeadas y barra superior.</div></div></div>
+      <div class="plug"><span class="badge">workspaces</span><div><div class="name">tmux-sessionx</div><div class="what">El buscador de <span class="mono">prefix w</span>, con fzf + zoxide.</div></div></div>
+      <div class="plug"><span class="badge">persistencia</span><div><div class="name">resurrect + continuum</div><div class="what">Guarda y restaura tus layouts automáticamente.</div></div></div>
+      <div class="plug"><span class="badge">clipboard</span><div><div class="name">tmux-yank</div><div class="what"><span class="mono">y</span> copia directamente al portapapeles de macOS.</div></div></div>
+      <div class="plug"><span class="badge">barra</span><div><div class="name">tmux-cpu + battery</div><div class="what">Indicadores de CPU y batería en la barra.</div></div></div>
+      <div class="plug"><span class="badge">base</span><div><div class="name">tmux-sensible</div><div class="what">Defaults universales que hacen tmux más cómodo.</div></div></div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────── QUICKSTART ───────────────────────── -->
+  <section id="start">
+    <div class="eyebrow">aprender haciendo</div>
+    <h2><span class="sec-no">05</span> Tus primeros cinco minutos</h2>
+    <div class="steps">
+      <div class="step"><div class="body">
+        <h3>Crea un workspace</h3>
+        <p>Presiona <span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">w</kbd></span>, escribe el nombre de un proyecto y Enter.</p>
+      </div></div>
+      <div class="step"><div class="body">
+        <h3>Abre un par de tabs</h3>
+        <p>Usa <span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">t</kbd></span> dos veces. Cambia entre ellas con <kbd class="k">prefix</kbd> y luego <kbd class="k">Tab</kbd>.</p>
+      </div></div>
+      <div class="step"><div class="body">
+        <h3>Divide una tab</h3>
+        <p><span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">=</kbd></span> los pone lado a lado; <span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">-</kbd></span> los apila. Muévete con <kbd class="k">prefix</kbd> <kbd class="k">h</kbd>/<kbd class="k">j</kbd>/<kbd class="k">k</kbd>/<kbd class="k">l</kbd>.</p>
+      </div></div>
+      <div class="step"><div class="body">
+        <h3>Copia algo sin el mouse</h3>
+        <p><span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">Esc</kbd></span> activa scroll, <kbd class="k">v</kbd> selecciona y <kbd class="k">y</kbd> copia al portapapeles.</p>
+      </div></div>
+      <div class="step"><div class="body">
+        <h3>Sal sin cerrar nada</h3>
+        <p><span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">d</kbd></span> te desconecta. Vuelve con <code>tmux a</code>; todo sigue ejecutándose.</p>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────── THE CLI ──────────────────────────── -->
+  <section id="cli">
+    <div class="eyebrow">cuando te olvidas</div>
+    <h2><span class="sec-no">06</span> El comando nachimux</h2>
+    <p>Todos los atajos viven también en un CLI buscable. Ábrelo dentro de tmux con
+    <span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">/</kbd></span>.
+    La consulta y la paleta ejecutable comparten exactamente los mismos datos.</p>
+    <pre><span class="c"># buscar cualquier atajo</span>
+nachimux
+<span class="c"># buscar directamente un tema</span>
+nachimux split
+<span class="c"># comprobar que todo está listo</span>
+nachimux doctor
+<span class="c"># volver a abrir esta guía</span>
+nachimux docs</pre>
+  </section>
+
+  <!-- ─────────────────────── FILES ────────────────────────────── -->
+  <section id="files">
+    <div class="eyebrow">dónde vive cada cosa</div>
+    <h2><span class="sec-no">07</span> Los archivos</h2>
+    <div class="files">
+      <div class="file"><div class="path">~/.tmux.conf</div><div class="note">Referencia el perfil de este repo.</div></div>
+      <div class="file"><div class="path">&lt;repo&gt;/tmux.spanish.conf</div><div class="note">El perfil real. Edítalo y usa <span class="mono">prefix r</span>.</div></div>
+      <div class="file"><div class="path">~/.tmux/plugins/</div><div class="note">Plugins instalados, administrados por TPM.</div></div>
+      <div class="file"><div class="path">~/.local/bin/nachimux</div><div class="note">Enlace al CLI creado por <span class="mono">nachimux setup</span>.</div></div>
+    </div>
+    <div class="callout" style="background:color-mix(in oklab, var(--blue) 12%, var(--mantle)); border-color:color-mix(in oklab, var(--blue) 40%, var(--surface0))">
+      <span class="ic" style="color:var(--blue)">Aa</span>
+      <div>Los íconos de la barra necesitan una <b>Nerd Font</b>. Si aparecen cuadrados,
+      elige por ejemplo <span class="mono">Hack Nerd Font</span> o <span class="mono">MesloLGS NF</span> en tu terminal.</div>
+    </div>
+  </section>
+
+  <footer>
+    nachimux · pensado para teclado español · Catppuccin Mocha · recarga con prefix r
+  </footer>
+
+</main>
+
+<script>
+  const root = document.documentElement;
+  const themeButton = document.querySelector('.theme-toggle');
+  const savedTheme = localStorage.getItem('nachimux-theme');
+  if (savedTheme === 'light' || savedTheme === 'dark') root.dataset.theme = savedTheme;
+
+  themeButton.addEventListener('click', () => {
+    const current = root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const next = current === 'dark' ? 'light' : 'dark';
+    root.dataset.theme = next;
+    localStorage.setItem('nachimux-theme', next);
+  });
+
+  document.querySelectorAll('[data-copy]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(button.dataset.copy);
+        const old = button.textContent;
+        button.textContent = 'copiado ✓';
+        setTimeout(() => { button.textContent = old; }, 1400);
+      } catch {
+        button.textContent = 'selecciona el comando';
+      }
+    });
+  });
+</script>
+</body>
+</html>

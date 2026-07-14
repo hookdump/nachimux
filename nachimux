@@ -1,0 +1,368 @@
+#!/usr/bin/env bash
+#
+# nachimux — a fuzzy, fancy tmux cheatsheet for people who never remember the shortcuts.
+#
+# Usage:
+#   nachimux                 Fuzzy-search every shortcut (default)
+#   nachimux <query>         Jump straight into the search pre-filtered by <query>
+#   nachimux -c, --category  Browse shortcuts by category
+#   nachimux -a, --all       Print the whole cheatsheet as a styled poster
+#   nachimux -p, --prefix    Show / explain the tmux prefix key
+#   nachimux docs             Open the visual HTML guide
+#   nachimux doctor           Check the installation and active tmux prefix
+#   nachimux setup            Link the CLI and activate the tmux config
+#   nachimux -h, --help      Show this help
+#
+set -euo pipefail
+
+# --- locate our data no matter where we're symlinked from -------------------
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do
+  DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+ROOT="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+DATA="$ROOT/data/cheatsheet.tsv"
+CONFIG="$ROOT/tmux.spanish.conf"
+DOCS="$ROOT/tmux-guide.html"
+
+# --- theme ------------------------------------------------------------------
+ACCENT="212"   # pink
+DIM="240"      # grey
+OK="47"        # green
+PREFIX_KEY="C-b"                       # keep the CLI aligned with this profile
+
+# --- helpers ----------------------------------------------------------------
+have() { command -v "$1" >/dev/null 2>&1; }
+
+prefix_long_name() {
+  case "$PREFIX_KEY" in
+    C-?) printf 'Ctrl + %s' "${PREFIX_KEY#C-}" ;;
+    *)   printf '%s' "$PREFIX_KEY" ;;
+  esac
+}
+
+copy_to_clipboard() {
+  if have pbcopy;   then printf '%s' "$1" | pbcopy; return 0; fi
+  if have xclip;    then printf '%s' "$1" | xclip -selection clipboard; return 0; fi
+  if have wl-copy;  then printf '%s' "$1" | wl-copy; return 0; fi
+  return 1
+}
+
+# turn a data row into the human-readable key sequence you actually press
+render_keys() {
+  local mode="$1" keys="$2"
+  case "$mode" in
+    prefix) printf '%s  %s' "$PREFIX_KEY" "$keys" ;;
+    copy)   printf '(copy-mode)  %s' "$keys" ;;
+    shell)  printf '$ %s' "$keys" ;;
+    palette) printf '(palette only)' ;;
+    *)      printf '%s' "$keys" ;;
+  esac
+}
+
+require_gum() {
+  if ! have gum; then
+    echo "nachimux needs 'gum' for the interactive UI." >&2
+    echo "Install it:  brew install gum      (or see https://github.com/charmbracelet/gum)" >&2
+    echo "Meanwhile, 'nachimux --all' prints a plain cheatsheet." >&2
+    exit 1
+  fi
+}
+
+# --- build the searchable lines --------------------------------------------
+# Registry columns: category, mode, keys, description, command, confirmation.
+# The final two columns are consumed by the executable tmux palette.
+build_lines() {
+  local filter_cat="${1:-}"
+  while IFS=$'\t' read -r category mode keys desc action_cmd confirm; do
+    [[ "$category" == "category" ]] && continue          # skip header
+    [[ -z "${category// }" ]] && continue                # skip blanks
+    [[ -n "$filter_cat" && "$category" != "$filter_cat" ]] && continue
+    printf '%s\t%s\t%s\t%s\n' "$category" "$(render_keys "$mode" "$keys")" "$desc" "$keys"
+  done < "$DATA"
+}
+
+# pretty, aligned display column that gum will fuzzy-match against
+display_table() {
+  build_lines "${1:-}" | awk -F'\t' '{
+    printf "%-11s │ %-26s │ %s\n", $1, $2, $3
+  }'
+}
+
+# --- the interactive search -------------------------------------------------
+search() {
+  require_gum
+  local query="${1:-}"
+  local header
+  header="$(gum style --foreground "$ACCENT" --bold "  tmux cheatsheet")"
+  echo "$header"
+  gum style --foreground "$DIM" "  prefix = $PREFIX_KEY · type to filter · Enter to pick · Esc to quit"
+  echo
+
+  local choice
+  choice="$(display_table | gum filter \
+      --placeholder "search shortcuts…" \
+      --prompt "🔍 " \
+      --indicator "→" \
+      --height 20 \
+      --value "$query" || true)"
+
+  [[ -z "$choice" ]] && exit 0
+  show_card "$choice"
+}
+
+# browse categories first, then search within one
+browse() {
+  require_gum
+  local cat
+  cat="$(cut -f1 "$DATA" | tail -n +2 | grep -v '^[[:space:]]*$' | awk '!seen[$0]++' \
+        | gum choose --header "Pick a category:" --height 12 || true)"
+  [[ -z "$cat" ]] && exit 0
+
+  local choice
+  choice="$(display_table "$cat" | gum filter \
+      --placeholder "search $cat…" \
+      --prompt "🔍 " \
+      --indicator "→" \
+      --height 20 || true)"
+  [[ -z "$choice" ]] && exit 0
+  show_card "$choice"
+}
+
+# a styled detail card + offer to copy the keys
+show_card() {
+  local line="$1"
+  # line looks like:  CATEGORY │ PRETTY_KEYS │ DESCRIPTION
+  local category pretty desc
+  category="$(sed 's/│.*//'          <<<"$line" | xargs)"
+  pretty="$(sed 's/^[^│]*│//; s/│.*//' <<<"$line" | sed 's/^ *//; s/ *$//')"
+  desc="$(sed 's/^[^│]*│[^│]*│//'    <<<"$line" | sed 's/^ *//; s/ *$//')"
+
+  echo
+  gum style \
+    --border rounded --border-foreground "$ACCENT" \
+    --padding "1 3" --margin "0 0" \
+    "$(gum style --foreground "$DIM" "$category")" \
+    "$(gum style --foreground "$ACCENT" --bold "$pretty")" \
+    "$desc"
+
+  # copy the actual key sequence (strip the "$ " / "(copy-mode)" adornments
+  # for shell commands we copy the command verbatim)
+  local to_copy="$pretty"
+  case "$pretty" in
+    "\$ "*) to_copy="${pretty#\$ }" ;;
+  esac
+
+  if have gum && gum confirm "Copy \"$to_copy\" to clipboard?" --default=false 2>/dev/null; then
+    if copy_to_clipboard "$to_copy"; then
+      gum style --foreground "$OK" "✓ copied"
+    else
+      gum style --foreground "$DIM" "no clipboard tool found (pbcopy/xclip/wl-copy)"
+    fi
+  fi
+}
+
+# --- static poster (works without gum) -------------------------------------
+poster() {
+  local out=""
+  local last=""
+  while IFS=$'\t' read -r category mode keys desc action_cmd confirm; do
+    [[ "$category" == "category" ]] && continue
+    [[ -z "${category// }" ]] && continue
+    if [[ "$category" != "$last" ]]; then
+      out+=$'\n'"### $category"$'\n'
+      last="$category"
+    fi
+    out+="$(printf '  %-26s  %s\n' "$(render_keys "$mode" "$keys")" "$desc")"$'\n'
+  done < "$DATA"
+
+  if have gum; then
+    gum style --foreground "$ACCENT" --bold --margin "1 2" --padding "0 1" \
+      "tmux cheatsheet   (prefix = $PREFIX_KEY)"
+    printf '%s\n' "$out" | sed 's/^### \(.*\)/\n\x1b[1;38;5;212m\1\x1b[0m/'
+  else
+    echo "tmux cheatsheet   (prefix = $PREFIX_KEY)"
+    printf '%s\n' "$out"
+  fi
+}
+
+prefix_help() {
+  local long_name
+  long_name="$(prefix_long_name)"
+  if have gum; then
+    gum style --border rounded --border-foreground "$ACCENT" --padding "1 3" \
+      "$(gum style --bold --foreground "$ACCENT" "The tmux prefix")" \
+      "" \
+      "Almost every tmux shortcut starts with the PREFIX key," \
+      "then you release it and press the next key." \
+      "" \
+      "$(gum style --bold "Your prefix:  $PREFIX_KEY")   ($long_name)" \
+      "" \
+      "So \"$PREFIX_KEY t\" means: press $long_name, release, then tap t." \
+      "" \
+      "$(gum style --foreground "$DIM" "Tip: press Ctrl-b twice to send a literal Ctrl-b.")"
+  else
+    cat <<EOF
+The tmux prefix
+  Your prefix: $PREFIX_KEY  ($long_name)
+  "$PREFIX_KEY t" = press $long_name, release, then tap t.
+  Press Ctrl-b twice to send a literal Ctrl-b.
+EOF
+  fi
+}
+
+open_docs() {
+  [[ -f "$DOCS" ]] || { echo "nachimux: guide not found: $DOCS" >&2; return 1; }
+  if have open; then
+    open "$DOCS"
+  elif have xdg-open; then
+    xdg-open "$DOCS"
+  else
+    printf 'Open this file in your browser:\n  %s\n' "$DOCS"
+  fi
+}
+
+doctor() {
+  local problems=0 active_prefix="not running" custom_prefix=""
+  printf 'nachimux doctor\n\n'
+
+  check_command() {
+    local cmd="$1" required="$2" note="$3"
+    if have "$cmd"; then
+      printf '  [ok]   %-10s %s\n' "$cmd" "$(command -v "$cmd")"
+    elif [[ "$required" == "yes" ]]; then
+      printf '  [fail] %-10s missing — %s\n' "$cmd" "$note"
+      problems=$((problems + 1))
+    else
+      printf '  [note] %-10s missing — %s\n' "$cmd" "$note"
+    fi
+  }
+
+  check_command tmux yes  'brew install tmux'
+  check_command fzf  yes  'brew install fzf'
+  check_command gum  yes  'brew install gum'
+  check_command zoxide no  'recommended for the workspace switcher: brew install zoxide'
+
+  if [[ -f "$HOME/.tmux.conf" ]] && grep -Fq 'tmux.spanish.conf' "$HOME/.tmux.conf"; then
+    printf '  [ok]   %-10s sources nachimux\n' '~/.tmux.conf'
+  else
+    printf '  [fail] %-10s does not source nachimux — run: nachimux setup\n' '~/.tmux.conf'
+    problems=$((problems + 1))
+  fi
+
+  if have tmux && tmux list-sessions >/dev/null 2>&1; then
+    active_prefix="$(tmux show-options -gv prefix 2>/dev/null || printf unknown)"
+    custom_prefix="$(tmux list-keys -T root 2>/dev/null \
+      | grep -E 'root[[:space:]]+C-b.*switch-client -T prefix' || true)"
+    if [[ "$active_prefix" == "C-b" || ( "$active_prefix" == "None" && -n "$custom_prefix" ) ]]; then
+      printf '  [ok]   %-10s C-b (Ctrl + b)\n' 'live prefix'
+    else
+      printf '  [fail] %-10s %s — expected C-b; run: tmux source-file ~/.tmux.conf\n' 'live prefix' "$active_prefix"
+      problems=$((problems + 1))
+    fi
+  else
+    printf '  [note] %-10s no tmux server; it will use C-b on first launch\n' 'live prefix'
+  fi
+
+  if [[ -n "${TMUX_PREFIX:-}" && "$TMUX_PREFIX" != "C-b" ]]; then
+    printf '  [note] %-10s %s is a legacy override and is ignored; remove it from your shell profile\n' 'TMUX_PREFIX' "$TMUX_PREFIX"
+  fi
+
+  if [[ -x "$HOME/.tmux/plugins/tpm/tpm" ]]; then
+    printf '  [ok]   %-10s installed\n' 'TPM'
+  else
+    printf '  [note] %-10s missing — install it, then press C-b I inside tmux\n' 'TPM'
+  fi
+
+  printf '\n'
+  if (( problems == 0 )); then
+    printf 'Everything essential is ready. Open the guide with: nachimux docs\n'
+  else
+    printf '%d issue(s) need attention. The hints above show how to fix them.\n' "$problems"
+    return 1
+  fi
+}
+
+setup_nachimux() {
+  local bin_dir="$HOME/.local/bin" bin="$HOME/.local/bin/nachimux"
+  local source_line="source-file '$CONFIG'"
+  local home_source=""
+  [[ "$CONFIG" == "$HOME/"* ]] && home_source="~/${CONFIG#"$HOME/"}"
+
+  mkdir -p "$bin_dir"
+  if [[ -L "$bin" && "$(readlink "$bin")" == "$ROOT/nachimux" ]]; then
+    printf '[ok] CLI already linked at %s\n' "$bin"
+  elif [[ -e "$bin" || -L "$bin" ]]; then
+    printf 'nachimux: refusing to replace existing %s\n' "$bin" >&2
+    return 1
+  else
+    ln -s "$ROOT/nachimux" "$bin"
+    printf '[ok] Linked CLI at %s\n' "$bin"
+  fi
+
+  touch "$HOME/.tmux.conf"
+  if grep -Fq "$CONFIG" "$HOME/.tmux.conf" \
+      || { [[ -n "$home_source" ]] && grep -Fq "$home_source" "$HOME/.tmux.conf"; }; then
+    printf '[ok] ~/.tmux.conf already sources this repo\n'
+  elif grep -Fq 'tmux.spanish.conf' "$HOME/.tmux.conf"; then
+    printf 'nachimux: ~/.tmux.conf already points to another nachimux config; update it manually:\n  %s\n' "$source_line" >&2
+    return 1
+  else
+    {
+      printf '\n# nachimux — managed by `nachimux setup`\n'
+      printf '%s\n' "$source_line"
+    } >> "$HOME/.tmux.conf"
+    printf '[ok] Added nachimux to ~/.tmux.conf\n'
+  fi
+
+  if have tmux && tmux list-sessions >/dev/null 2>&1; then
+    tmux source-file "$HOME/.tmux.conf"
+    printf '[ok] Reloaded the running tmux server; prefix is now C-b\n'
+  else
+    printf '[ok] Config will load the next time tmux starts\n'
+  fi
+
+  if [[ ":$PATH:" != *":$bin_dir:"* ]]; then
+    printf '\nAdd this to your shell profile so `nachimux` is on PATH:\n  export PATH="$HOME/.local/bin:$PATH"\n'
+  fi
+  printf '\nNext: run `nachimux doctor`, then `nachimux docs`.\n'
+}
+
+usage() {
+  cat <<'EOF'
+nachimux — a fuzzy tmux cheatsheet
+
+  nachimux                  fuzzy-search every shortcut
+  nachimux <query>          search, pre-filtered by <query>
+  nachimux category         browse by category
+  nachimux all              print the whole sheet as a poster
+  nachimux prefix           explain Ctrl-b, the tmux prefix
+  nachimux docs             open the visual HTML guide
+  nachimux doctor           check dependencies, config and live prefix
+  nachimux setup            link the CLI and activate this config
+  nachimux help             show this help
+
+Short flags: -c/--category · -a/--all · -p/--prefix · -h/--help
+
+Start here:  nachimux setup && nachimux doctor
+Inside tmux: Ctrl-b, release, then p opens the command palette.
+EOF
+}
+
+# --- dispatch ---------------------------------------------------------------
+[[ -f "$DATA" ]] || { echo "nachimux: data file missing: $DATA" >&2; exit 1; }
+
+case "${1:-}" in
+  -h|--help|help)           usage ;;
+  -a|--all|all)             poster ;;
+  -c|--category|category)   browse ;;
+  -p|--prefix|prefix)       prefix_help ;;
+  --docs|docs|guide)        open_docs ;;
+  --doctor|doctor)          doctor ;;
+  --setup|setup|install)    setup_nachimux ;;
+  "")                      search "" ;;
+  -*)                       echo "nachimux: unknown option: $1" >&2; echo "Try: nachimux help" >&2; exit 2 ;;
+  *)                        search "$*" ;;
+esac
