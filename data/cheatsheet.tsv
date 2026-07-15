@@ -17,7 +17,7 @@ Tabs	prefix	<	Move tab left	swap-window -t -1 \; previous-window
 Tabs	prefix	>	Move tab right	swap-window -t +1 \; next-window	
 Tabs	prefix	X	Close the current tab	kill-window	Close this tab?
 Tabs	prefix	f	Find a tab by name	find-window	
-Tabs	prefix	m	Move this tab to another workspace (pick from the tree)	choose-tree -Zs "move-window -t '%%:'"	
+Tabs	prefix	m	Move this tab to another workspace (pick from the tree)	choose-tree -Zs "move-window -t '%%'"	
 Splits	prefix	-	Split top / bottom in the current directory	split-window -v -c "#{pane_current_path}"	
 Splits	prefix	=	Split side by side in the current directory	split-window -h -c "#{pane_current_path}"	
 Splits	prefix	h j k l	Move between splits (vim style; arrows work too)		
