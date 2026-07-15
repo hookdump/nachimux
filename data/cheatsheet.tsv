@@ -2,7 +2,8 @@ category	mode	keys	description	command	confirm
 Workspaces	prefix	w	Switch or kill a workspace (tree view; F1 for help)	choose-tree -Zs	
 Workspaces	prefix	)	Next workspace	switch-client -n	
 Workspaces	prefix	(	Previous workspace	switch-client -p	
-Workspaces	prefix	b	Toggle the workspace sidebar	run-shell "$NACHIMUX_ROOT/scripts/sidebar-toggle.sh"	
+Workspaces	prefix	B	Last workspace (toggle back to the previous one)	switch-client -l	
+Workspaces	prefix	g	Jump to any tab in any workspace (fuzzy popup)		
 Workspaces	prefix	d	Detach and leave everything running	detach-client	
 Workspaces	prefix	$	Rename the current workspace	command-prompt -I "#S" "rename-session '%%'"	
 Workspaces	prefix	N	Create a new workspace	command-prompt -p "new workspace name:" "new-session -s '%%'"	
@@ -18,6 +19,7 @@ Tabs	prefix	>	Move tab right	swap-window -t +1 \; next-window
 Tabs	prefix	X	Close the current tab	kill-window	Close this tab?
 Tabs	prefix	f	Find a tab by name	find-window	
 Tabs	prefix	m	Move this tab to another workspace (pick from the tree)	choose-tree -Zs "move-window -t '%%'"	
+Tabs	prefix	b	Last tab (or last workspace, if you haven't switched tabs since entering this one)	if-shell -F '#{@tab_switched}' 'last-window' 'switch-client -l'	
 Splits	prefix	-	Split top / bottom in the current directory	split-window -v -c "#{pane_current_path}"	
 Splits	prefix	=	Split side by side in the current directory	split-window -h -c "#{pane_current_path}"	
 Splits	prefix	h j k l	Move between splits (vim style; arrows work too)		
