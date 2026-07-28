@@ -23,6 +23,9 @@ PINS_FILE="$STATE_DIR/prefix-pins"
 # Matches the current bar exactly, so nothing changes until you customize.
 DEFAULT_PINS=(newtab workspaces tabs split actions)
 
+# Category headers are rendered in this order; only non-empty ones appear.
+CATEGORY_ORDER=(TABS WS SPLIT COPY MISC)
+
 # Green pill caps (identical to the theme's prefix accent). The content between
 # them is bold keys + nobold labels joined by " · ".
 CAP_L='#[fg=#00ff00]#[bg=default]#[fg=#11111b]#[bg=#00ff00]#[bold]'
@@ -37,28 +40,42 @@ ensure_state() {
 
 is_pinned() { grep -qxF "$1" "$PINS_FILE" 2>/dev/null; }
 
-# Render the pinned shortcuts into the tmux option the status bar reads, in the
-# order you pinned them (pins-file order), resolving each id's key+label from
-# the universe. Unknown/stale ids are skipped. Empty option when none pinned.
+# Render the pinned shortcuts into the tmux option the status bar reads, GROUPED
+# by category (TABS / WS / SPLIT / …). Each category shows a bold header, then its
+# pinned items as compact "key=label" joined by " · ". Categories appear in
+# CATEGORY_ORDER; within one, items follow pins-file order. Stale ids are skipped.
 build() {
   ensure_state
-  local id line key label content="" n=0
+  # Resolve each pinned id -> cat/key/label once (bash 3.2: no assoc arrays).
+  local ids_cat=() ids_key=() ids_lbl=() id line
   while IFS= read -r id || [[ -n "$id" ]]; do
     [[ -z "$id" ]] && continue
     line="$(awk -F'\t' -v id="$id" '$1==id {print; exit}' "$HINTS")"
     [[ -z "$line" ]] && continue
-    key="$(printf '%s' "$line" | cut -f2)"
-    label="$(printf '%s' "$line" | cut -f3)"
-    if (( n == 0 )); then
-      content+=" ${key} #[nobold]${label}"
-    else
-      content+=" · #[bold]${key} #[nobold]${label}"
-    fi
-    n=$((n + 1))
+    ids_cat+=("$(printf '%s' "$line" | cut -f2)")
+    ids_key+=("$(printf '%s' "$line" | cut -f3)")
+    ids_lbl+=("$(printf '%s' "$line" | cut -f4)")
   done < "$PINS_FILE"
 
+  local content="" cat i group gn
+  for cat in "${CATEGORY_ORDER[@]}"; do
+    group=""; gn=0
+    for i in "${!ids_cat[@]}"; do
+      [[ "${ids_cat[$i]}" != "$cat" ]] && continue
+      if (( gn == 0 )); then
+        group="${ids_key[$i]}=${ids_lbl[$i]}"
+      else
+        group+=" · ${ids_key[$i]}=${ids_lbl[$i]}"
+      fi
+      gn=$((gn + 1))
+    done
+    (( gn == 0 )) && continue
+    [[ -n "$content" ]] && content+="   "
+    content+="#[bold]${cat}#[nobold] ${group}"
+  done
+
   local hint=""
-  (( n > 0 )) && hint="${CAP_L}${content} ${CAP_R}"
+  [[ -n "$content" ]] && hint="${CAP_L} ${content} ${CAP_R}"
 
   tmux set -g @nachimux_prefix_hint "$hint" 2>/dev/null || true
   tmux refresh-client -S 2>/dev/null || true
@@ -83,15 +100,18 @@ list_fzf() {
   local id key label mark keycol
   local GREEN=$'\033[38;5;120m' MAUVE=$'\033[38;5;183m'
   local DIM=$'\033[38;5;102m'   RST=$'\033[0m'
-  while IFS=$'\t' read -r id key label; do
+  local cat catcol
+  while IFS=$'\t' read -r id cat key label; do
     [[ "$id" == "id" || -z "$id" ]] && continue
     if is_pinned "$id"; then
       mark="${GREEN}✓${RST}"
     else
       mark="${DIM}○${RST}"
     fi
+    catcol="$(printf '%-6s' "$cat")"
     keycol="$(printf '%-5s' "$key")"
-    printf '%s  %s%s%s %s\t%s\n' "$mark" "$MAUVE" "$keycol" "$RST" "$label" "$id"
+    printf '%s  %s%s%s %s%s%s %s\t%s\n' \
+      "$mark" "$DIM" "$catcol" "$RST" "$MAUVE" "$keycol" "$RST" "$label" "$id"
   done < "$HINTS"
 }
 

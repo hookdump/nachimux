@@ -1,38 +1,42 @@
-id	key	label
-workspaces	w	workspaces
-ws-next	)	next ws
-ws-prev	(	prev ws
-rename-ws	$	rename ws
-new-ws	N	new ws
-sidebar	b	sidebar
-detach	d	detach
-newtab	t	new tab
-nexttab	Tab	next tab
-prevtab	S-Tab	prev tab
-tabs	1–9	tabs
-rename	,	rename tab
-tab-left	<	tab left
-tab-right	>	tab right
-killtab	X	close tab
-find	f	find tab
-split	-/=	split
-pane-nav	hjkl	move pane
-pane-resize	HJKL	resize
-zoom	z	zoom
-layout	Space	layout
-even	e	even out
-breakpane	!	pop out
-killpane	x	close split
-nextpane	o	next split
-rotate	O	rotate
-copy	Esc	copy
-paste	P	paste
-save	C-s	save
-restore	C-r	restore
-tpm-install	I	install plugins
-tpm-update	U	update plugins
-actions	p	actions
-help	/	help
-reload	r	reload
-cmd	:	cmd prompt
-keys	?	list keys
+id	cat	key	label
+newtab	TABS	t	new
+rename	TABS	,	rename
+last-tab	TABS	b	last
+jump	TABS	g	jump
+attention	TABS	n	needs
+move-tab	TABS	m	move
+find	TABS	f	find
+killtab	TABS	X	close
+nexttab	TABS	Tab	next
+prevtab	TABS	S-Tab	prev
+tab-left	TABS	<	←
+tab-right	TABS	>	→
+tabs	TABS	1–9	go
+workspaces	WS	w	list
+new-ws	WS	N	new
+rename-ws	WS	$	rename
+last-ws	WS	B	last
+ws-next	WS	)	next
+ws-prev	WS	(	prev
+detach	WS	d	detach
+split	SPLIT	-/=	split
+layout	SPLIT	Space	layout
+zoom	SPLIT	z	zoom
+pane-nav	SPLIT	hjkl	move
+pane-resize	SPLIT	HJKL	resize
+even	SPLIT	e	even
+breakpane	SPLIT	!	pop
+killpane	SPLIT	x	close
+nextpane	SPLIT	o	next
+rotate	SPLIT	O	rotate
+copy	COPY	Esc	copy
+paste	COPY	P	paste
+actions	MISC	p	actions
+help	MISC	/	help
+reload	MISC	r	reload
+cmd	MISC	:	cmd
+keys	MISC	?	keys
+save	MISC	C-s	save
+restore	MISC	C-r	restore
+tpm-install	MISC	I	install
+tpm-update	MISC	U	update

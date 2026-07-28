@@ -34,6 +34,7 @@ WSCOL=$'\033[38;5;183m'    # mauve  — workspace names (header rows)
 IDXCOL=$'\033[38;5;102m'   # overlay grey — tab numbers
 CURCOL=$'\033[38;5;150m'   # green  — the workspace/tab you're on now
 WSTAG=$'\033[38;5;239m'    # dark grey — faint workspace tag on tab rows
+YELLOW=$'\033[1;38;5;220m' # bold yellow — a tab/workspace asking for attention
 RST=$'\033[0m'
 
 # Each emitted line has two tab-separated fields:
@@ -45,17 +46,29 @@ RST=$'\033[0m'
 # to that workspace's tab. Workspace rows target the session (its active tab); tab
 # rows target the window.
 build() {
-  local last_sid="" sid sname wid widx wname wactive pointer namecol mark
-  while IFS=$'\t' read -r sid sname wid widx wname wactive; do
+  local last_sid="" sid sname wid widx wname wactive attn pointer namecol mark
+  # sessions holding at least one attention/bell window — so we can flag the
+  # workspace header too, even though its rows stream one at a time.
+  local flagged_sessions
+  flagged_sessions=" $(tmux list-windows -a -f '#{||:#{@attention},#{window_bell_flag}}' \
+                        -F '#{session_id}' 2>/dev/null | sort -u | tr '\n' ' ') "
+  while IFS=$'\t' read -r sid sname wid widx wname wactive attn; do
     if [[ "$sid" != "$last_sid" ]]; then
       last_sid="$sid"
       mark=""
       [[ "$sid" == "$CUR_SESSION" ]] && mark=" ${CURCOL}●${RST}"
-      printf '%s%s%s%s\t%s\n' "$WSCOL" "$sname" "$RST" "$mark" "$sid"
+      if [[ "$flagged_sessions" == *" $sid "* ]]; then
+        printf '%s🔔 %s%s%s\t%s\n' "$YELLOW" "$sname" "$RST" "$mark" "$sid"
+      else
+        printf '%s%s%s%s\t%s\n' "$WSCOL" "$sname" "$RST" "$mark" "$sid"
+      fi
     fi
     pointer="  "
     namecol="$RST"
-    if [[ "$wid" == "$CUR_WINDOW" ]]; then
+    if [[ "$attn" == "1" ]]; then
+      pointer=" ${YELLOW}🔔${RST}"
+      namecol="$YELLOW"
+    elif [[ "$wid" == "$CUR_WINDOW" ]]; then
       pointer=" ${CURCOL}▶${RST}"
       namecol="$CURCOL"
     fi
@@ -63,7 +76,7 @@ build() {
       "$pointer" "$IDXCOL" "$widx" "$RST" "$namecol" "$wname" "$RST" \
       "$WSTAG" "$sname" "$RST" "$wid"
   done < <(tmux list-windows -a \
-    -F '#{session_id}	#{session_name}	#{window_id}	#{window_index}	#{window_name}	#{window_active}')
+    -F '#{session_id}	#{session_name}	#{window_id}	#{window_index}	#{window_name}	#{window_active}	#{||:#{@attention},#{window_bell_flag}}')
 }
 
 COLORS="bg+:#313244,bg:#1e1e2e,spinner:#f5e0dc,hl:#f38ba8,fg:#cdd6f4"
