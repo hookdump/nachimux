@@ -2,7 +2,8 @@ category	mode	keys	description	command	confirm
 Workspaces	prefix	w	Switch or kill a workspace (tree view; F1 for help)	choose-tree -Zs	
 Workspaces	prefix	)	Next workspace	switch-client -n	
 Workspaces	prefix	(	Previous workspace	switch-client -p	
-Workspaces	prefix	B	Last workspace (toggle back to the previous one)	switch-client -l	
+Tabs	prefix	B	Recent tabs — lettered popup of last-visited tabs (all workspaces)	scripts/pick-window.sh
+Tabs	prefix	n	Needs you — lettered popup of tabs asking for attention	scripts/pick-window.sh
 Workspaces	prefix	g	Jump to any tab in any workspace (fuzzy popup)		
 Workspaces	prefix	d	Detach and leave everything running	detach-client	
 Workspaces	prefix	$	Rename the current workspace	command-prompt -I "#S" "rename-session '%%'"	
@@ -14,8 +15,9 @@ Tabs	prefix	Tab	Next tab	next-window
 Tabs	prefix	S-Tab	Previous tab (Shift+Tab)	previous-window	
 Tabs	prefix	1 … 9	Jump straight to a tab number		
 Tabs	prefix	,	Rename the current tab	command-prompt -I "#W" "rename-window '%%'"	
-Tabs	prefix	<	Move tab left	swap-window -t -1 \; previous-window	
-Tabs	prefix	>	Move tab right	swap-window -t +1 \; next-window	
+Tabs	prefix	<	Move tab left (edge wraps by rotating, not swapping)	scripts/move-tab.sh … left
+Tabs	prefix	>	Move tab right (edge wraps by rotating, not swapping)	scripts/move-tab.sh … right
+Tabs	prefix	G	Reorder tabs (pick-up / put-down popup; edges rotate)	scripts/reorder-tabs.sh
 Tabs	prefix	X	Close the current tab	kill-window	Close this tab?
 Tabs	prefix	f	Find a tab by name	find-window	
 Tabs	prefix	m	Move this tab to another workspace (pick from the tree)	choose-tree -Zs "move-window -t '%%'"	

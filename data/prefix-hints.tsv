@@ -3,6 +3,7 @@ newtab	TABS	t	new
 rename	TABS	,	rename
 last-tab	TABS	b	last
 jump	TABS	g	jump
+reorder	TABS	G	reorder
 attention	TABS	n	needs
 move-tab	TABS	m	move
 find	TABS	f	find
@@ -15,7 +16,7 @@ tabs	TABS	1–9	go
 workspaces	WS	w	list
 new-ws	WS	N	new
 rename-ws	WS	$	rename
-last-ws	WS	B	last
+recent-tabs	TABS	B	recent
 ws-next	WS	)	next
 ws-prev	WS	(	prev
 detach	WS	d	detach
