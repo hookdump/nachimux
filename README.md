@@ -76,7 +76,7 @@ También funcionan las opciones cortas existentes: `-c`, `-a`, `-p` y `-h`.
 
 - `tmux.spanish.conf`: configuración principal.
 - `data/cheatsheet.tsv`: registro único de atajos, acciones y confirmaciones.
-- `scripts/`: paleta y sonidos.
+- `scripts/`: paleta, sonidos y la barra de estado.
 - `tmux-guide.html`: documentación visual autocontenida.
 
 El perfil resuelve los scripts desde la ubicación real del repo, por lo que no depende
