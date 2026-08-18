@@ -21,7 +21,7 @@ STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/nachimux"
 PINS_FILE="$STATE_DIR/prefix-pins"
 
 # Matches the current bar exactly, so nothing changes until you customize.
-DEFAULT_PINS=(newtab workspaces tabs split actions)
+DEFAULT_PINS=(newtab workspaces tabs tabs10 split actions)
 
 # Category headers are rendered in this order; only non-empty ones appear.
 CATEGORY_ORDER=(TABS WS SPLIT COPY MISC)

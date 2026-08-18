@@ -13,6 +13,7 @@ prevtab	TABS	S-Tab	prev
 tab-left	TABS	<	←
 tab-right	TABS	>	→
 tabs	TABS	1–9	go
+tabs10	TABS	0	10+
 workspaces	WS	w	list
 new-ws	WS	N	new
 rename-ws	WS	$	rename

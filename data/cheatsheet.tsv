@@ -14,6 +14,7 @@ Tabs	prefix	t	New tab in the current directory	new-window -c "#{pane_current_pat
 Tabs	prefix	Tab	Next tab	next-window	
 Tabs	prefix	S-Tab	Previous tab (Shift+Tab)	previous-window	
 Tabs	prefix	1 … 9	Jump straight to a tab number		
+Tabs	prefix	0 then 0 … 9	Jump to tabs 10–19 — prefix 0 lights each tab's second digit, then press it (0 2 = tab 12)		
 Tabs	prefix	,	Rename the current tab	command-prompt -I "#W" "rename-window '%%'"	
 Tabs	prefix	<	Move tab left (edge wraps by rotating, not swapping)	scripts/move-tab.sh … left
 Tabs	prefix	>	Move tab right (edge wraps by rotating, not swapping)	scripts/move-tab.sh … right
