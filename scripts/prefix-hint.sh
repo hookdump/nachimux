@@ -26,10 +26,12 @@ DEFAULT_PINS=(newtab workspaces tabs tabs10 split actions)
 # Category headers are rendered in this order; only non-empty ones appear.
 CATEGORY_ORDER=(TABS WS SPLIT COPY MISC)
 
-# Green pill caps (identical to the theme's prefix accent). The content between
-# them is bold keys + nobold labels joined by " · ".
-CAP_L='#[fg=#00ff00]#[bg=default]#[fg=#11111b]#[bg=#00ff00]#[bold]'
-CAP_R='#[fg=#00ff00]#[bg=default]#[default]'
+# Pill caps in the theme's prefix accent. These are tmux FORMATS, not literal
+# hexes: the option is expanded at draw time, so a light/dark flip repaints the
+# bar without this script having to know a single colour. scripts/theme.sh owns
+# the values and rebuilds this bar after a flip.
+CAP_L='#[fg=#{@nachimux_c_accent}]#[bg=default]#[fg=#{@nachimux_c_accentink}]#[bg=#{@nachimux_c_accent}]#[bold]'
+CAP_R='#[fg=#{@nachimux_c_accent}]#[bg=default]#[default]'
 
 ensure_state() {
   mkdir -p "$STATE_DIR"
