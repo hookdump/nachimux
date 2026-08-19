@@ -2,8 +2,8 @@ category	mode	keys	description	command	confirm
 Workspaces	prefix	w	Switch or kill a workspace (tree view; F1 for help)	choose-tree -Zs	
 Workspaces	prefix	)	Next workspace	switch-client -n	
 Workspaces	prefix	(	Previous workspace	switch-client -p	
-Tabs	prefix	B	Recent tabs — lettered popup of last-visited tabs (all workspaces)	scripts/pick-window.sh
-Tabs	prefix	n	Needs you — lettered popup of tabs asking for attention	scripts/pick-window.sh
+Tabs	prefix	B	Recent tabs — lettered popup of last-visited tabs (all workspaces)	scripts/pick-window.sh	
+Tabs	prefix	n	Needs you — lettered popup of tabs asking for attention	scripts/pick-window.sh	
 Workspaces	prefix	g	Jump to any tab in any workspace (fuzzy popup)		
 Workspaces	prefix	d	Detach and leave everything running	detach-client	
 Workspaces	prefix	$	Rename the current workspace	command-prompt -I "#S" "rename-session '%%'"	
@@ -15,9 +15,9 @@ Tabs	prefix	Tab	Next tab	next-window
 Tabs	prefix	S-Tab	Previous tab (Shift+Tab)	previous-window	
 Tabs	prefix	1 … 9	Jump to a tab. If tabs 10+ exist under that digit it asks first: Enter takes the single-digit tab, a second digit takes 10-19 (1 then 2 = tab 12)		
 Tabs	prefix	,	Rename the current tab	command-prompt -I "#W" "rename-window '%%'"	
-Tabs	prefix	<	Move tab left (edge wraps by rotating, not swapping)	scripts/move-tab.sh … left
-Tabs	prefix	>	Move tab right (edge wraps by rotating, not swapping)	scripts/move-tab.sh … right
-Tabs	prefix	G	Reorder tabs (pick-up / put-down popup; edges rotate)	scripts/reorder-tabs.sh
+Tabs	prefix	<	Move tab left (edge wraps by rotating, not swapping)	scripts/move-tab.sh … left	
+Tabs	prefix	>	Move tab right (edge wraps by rotating, not swapping)	scripts/move-tab.sh … right	
+Tabs	prefix	G	Reorder tabs (pick-up / put-down popup; edges rotate)	scripts/reorder-tabs.sh	
 Tabs	prefix	X	Close the current tab	kill-window	Close this tab?
 Tabs	prefix	F	Add this tab to the FOCUS workspace (linked: same tab in two places, not a copy)	run-shell "#{@nachimux_root}/scripts/focus.sh add '#{window_id}'"	
 Tabs	prefix	U	Remove this tab from THIS workspace only (safe: never kills it, unlike X)	run-shell "#{@nachimux_root}/scripts/focus.sh unlink '#{session_id}' '#{window_index}' '#{window_id}' '#{window_linked_sessions}'"	
@@ -27,7 +27,8 @@ Tabs	prefix	m	Move this tab to another workspace (pick from the tree)	choose-tre
 Tabs	prefix	b	Last tab (or last workspace, if you haven't switched tabs since entering this one)	if-shell -F '#{@tab_switched}' 'last-window' 'switch-client -l'	
 Splits	prefix	-	Split top / bottom in the current directory	split-window -v -c "#{pane_current_path}"	
 Splits	prefix	=	Split side by side in the current directory	split-window -h -c "#{pane_current_path}"	
-Splits	prefix	h j k l	Move between splits (vim style; arrows work too)		
+Splits	prefix	h j k l	Move between splits (vim style)		
+Splits	prefix	Up Down Left Right	Move between splits with the arrow keys (repeatable)		
 Splits	prefix	H J K L	Resize the split (hold Shift; repeatable)		
 Splits	prefix	z	Zoom or unzoom this split	resize-pane -Z	
 Splits	prefix	Space	Cycle through preset layouts	next-layout	
@@ -53,7 +54,8 @@ Plugins	prefix	C-s	Save all workspaces, tabs and splits	run-shell ~/.tmux/plugin
 Plugins	prefix	C-r	Restore the last saved layout	run-shell ~/.tmux/plugins/tmux-resurrect/scripts/restore.sh	
 Plugins	prefix	I	Install plugins listed in the config	run-shell ~/.tmux/plugins/tpm/scripts/install_plugins.sh	
 Plugins	prefix	C-u	Update installed plugins	run-shell "~/.tmux/plugins/tpm/scripts/update_plugin.sh all"	
-Help & misc	prefix	p	Open the command palette (also on prefix a)		
+Help & misc	prefix	p	Open the command palette		
+Help & misc	prefix	a	Open the command palette — same as p, easier one-hand reach		
 Help & misc	prefix	/	Open the searchable nachimux help	nachimux-help	
 Help & misc	prefix	r	Reload the tmux config	source-file ~/.tmux.conf	
 Help & misc	prefix	:	Open the tmux command prompt	command-prompt	

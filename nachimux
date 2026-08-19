@@ -330,6 +330,105 @@ setup_nachimux() {
   printf '\nNext: run `nachimux doctor`, then `nachimux docs`.\n'
 }
 
+# ── doctor --keys : does the cheatsheet still describe the real thing? ───────
+# data/cheatsheet.tsv is the single source of truth for the palette, prefix /
+# and this CLI, which means when it drifts it drifts everywhere at once and
+# nothing complains. It has drifted twice: prefix X advertised a confirmation
+# it never showed, and the retired prefix 0 lingered after the key was gone.
+#
+# Three questions, because drift runs in three directions:
+#   documented but not bound   the sheet promises a key that does nothing
+#   bound but not documented   a key exists that nothing tells you about
+#   confirm-column fiction     the sheet promises a prompt the binding skips
+#
+# "Bound" means bound BY US. tmux ships ~60 prefix defaults and listing those
+# as undocumented would bury the real findings, so a binding counts only if it
+# mentions nachimux -- which every one of ours does, via the confirm cue.
+doctor_keys() {
+  local problems=0
+
+  if ! have tmux || ! tmux list-sessions >/dev/null 2>&1; then
+    printf 'nachimux doctor --keys\n\n'
+    printf '  [note] no tmux server running — start tmux, then re-run\n'
+    return 0
+  fi
+
+  local live doc tmpd
+  tmpd="$(mktemp -d)"
+  trap 'rm -rf "$tmpd"' RETURN
+  live="$tmpd/live"; doc="$tmpd/doc"
+
+  # Live: key is the field after "-T prefix", so -r bindings don't shift it.
+  # tmux escapes keys for re-execution ($ ; " etc.) — unescape to compare.
+  tmux list-keys -T prefix 2>/dev/null | awk '
+    { for (i = 1; i < NF; i++) if ($i == "-T" && $(i+1) == "prefix") {
+        key = $(i+2); cmd = ""
+        for (j = i+3; j <= NF; j++) cmd = cmd $j " "
+        sub(/^\\/, "", key)          # tmux escapes $ ; " for re-execution
+        print key "\t" cmd; break } }' \
+    | grep -i nachimux | sort -u > "$live"
+
+  # Documented: expand the human shorthands the sheet is written in.
+  awk -F'\t' '$2 == "prefix" {
+      n = split($3, parts, " ")
+      if ($3 ~ /…/) {                      # "1 … 9" — a documented range
+        lo = parts[1] + 0; hi = parts[n] + 0
+        for (k = lo; k <= hi; k++) print k "\t" $6
+      } else {
+        for (i = 1; i <= n; i++) {         # "h j k l" — several keys, one row
+          k = parts[i]
+          if (k == "S-Tab") k = "BTab"
+          print k "\t" $6
+        }
+      }
+    }' "$DATA" | sort -u > "$doc"
+
+  printf 'nachimux doctor --keys\n\n'
+
+  # Shape first: a row with the wrong field count silently loses its command or
+  # its confirm prompt, which reads as "documented" while doing nothing.
+  local malformed
+  malformed="$(awk -F'\t' 'NR > 1 && NF > 0 && NF != 6 {printf "  [fail] malformed row %s          %s fields, expected 6\n", NR, NF}' "$DATA")"
+  [[ -n "$malformed" ]] && printf '%s\n' "$malformed"
+
+  local k c miss=0 extra=0 lied=0
+  while IFS=$'\t' read -r k c; do
+    if ! cut -f1 "$live" | grep -qxF "$k"; then
+      printf '  [fail] documented but NOT bound      prefix %s\n' "$k"
+      miss=$((miss + 1))
+    fi
+  done < <(cut -f1,2 "$doc" | sort -u)
+
+  while IFS=$'\t' read -r k; do
+    if ! cut -f1 "$doc" | grep -qxF "$k"; then
+      printf '  [fail] bound but NOT documented      prefix %s\n' "$k"
+      extra=$((extra + 1))
+    fi
+  done < <(cut -f1 "$live" | sort -u)
+
+  # The confirm column is a promise about behaviour, not just prose.
+  while IFS=$'\t' read -r k c; do
+    [[ -z "$c" ]] && continue
+    local cmd
+    cmd="$(awk -F'\t' -v key="$k" '$1 == key {print $2; exit}' "$live")"
+    [[ -z "$cmd" ]] && continue
+    if [[ "$cmd" != *confirm-before* ]]; then
+      printf '  [fail] sheet promises a prompt       prefix %-4s → "%s" but the key never asks\n' "$k" "$c"
+      lied=$((lied + 1))
+    fi
+  done < "$doc"
+
+  problems=$((miss + extra + lied + $(printf '%s' "$malformed" | grep -c . || true)))
+  printf '\n'
+  if (( problems == 0 )); then
+    printf '  [ok]   %s documented keys all bound, all honest\n' "$(cut -f1 "$doc" | sort -u | wc -l | tr -d ' ')"
+  else
+    printf '  %s problem(s): %s undocumented, %s unbound, %s false prompt(s)\n' \
+      "$problems" "$extra" "$miss" "$lied"
+  fi
+  return 0
+}
+
 usage() {
   cat <<'EOF'
 nachimux — a fuzzy tmux cheatsheet
@@ -341,6 +440,7 @@ nachimux — a fuzzy tmux cheatsheet
   nachimux prefix           explain Ctrl-b, the tmux prefix
   nachimux docs             open the visual HTML guide
   nachimux doctor           check dependencies, config and live prefix
+  nachimux doctor --keys    check the cheatsheet against the live bindings
   nachimux setup            link the CLI and activate this config
   nachimux help             show this help
 
@@ -360,7 +460,7 @@ case "${1:-}" in
   -c|--category|category)   browse ;;
   -p|--prefix|prefix)       prefix_help ;;
   --docs|docs|guide)        open_docs ;;
-  --doctor|doctor)          doctor ;;
+  --doctor|doctor)          if [[ "${2:-}" == "--keys" ]]; then doctor_keys; else doctor; fi ;;
   --setup|setup|install)    setup_nachimux ;;
   "")                      search "" ;;
   -*)                       echo "nachimux: unknown option: $1" >&2; echo "Try: nachimux help" >&2; exit 2 ;;
