@@ -38,11 +38,14 @@ check(){ if [[ -n "${2:-}" ]]; then ok "$1"; else bad "$1" "${3:-got nothing}"; 
 cleanup(){ tmux -L $OUT kill-server 2>/dev/null; tmux -L $IN kill-server 2>/dev/null; }
 trap cleanup EXIT
 
-boot() { # boot <windows>  — real config, real attached client
+boot() { # boot <windows> [name-prefix]  — real config, real attached client
   cleanup; sleep 0.3
-  tmux -L $IN -f "$CONF" new-session -d -s s -n w1 2>/dev/null || return 1
+  # Names must not be substrings of each other: the row checks below grep the
+  # rendered bar, and "tab-1" would match inside "tab-11".
+  local pre="${2:-w}" ; local -a sfx=(aa bb cc dd ee ff gg hh ii jj kk ll mm nn oo pp)
+  tmux -L $IN -f "$CONF" new-session -d -s s -n "${pre}${sfx[0]}" 2>/dev/null || return 1
   sleep 1.5
-  local i; for ((i=2;i<=$1;i++)); do tmux -L $IN new-window -d -t s -n "w$i" 2>/dev/null; done
+  local i; for ((i=2;i<=$1;i++)); do tmux -L $IN new-window -d -t s -n "${pre}${sfx[i-1]}" 2>/dev/null; done
   tmux -L $IN select-window -t s:=1 2>/dev/null
   tmux -L $OUT -f /dev/null new-session -d -s host -x 164 -y 24 2>/dev/null || return 1
   tmux -L $OUT set -g status off >/dev/null 2>&1
@@ -65,7 +68,7 @@ if boot 5; then
   check "status is 2 rows"            "$( [[ "$(t show -t s -v status)" == 2 ]] && echo y )" "status=$(t show -t s -v status)"
   check "messages avoid the tab row"  "$( [[ "$(t show -t s -v message-line)" == 1 ]] && echo y )"
   S="$(screen 1)"
-  check "row 0 has tabs on it"        "$(printf '%s' "$S" | grep -o 'w1')" "row 0 was: '$S'"
+  check "row 0 has tabs on it"        "$(printf '%s' "$S" | grep -o 'waa')" "row 0 was: '$S'"
   check "row 0 has the workspace name" "$(printf '%s' "$S" | grep -o ' s ')"
   for r in 0 1; do
     check "status-format[$r] renders"  "$(t display -p -t s "#{E:status-format[$r]}" | tr -d ' ')"
@@ -73,20 +76,47 @@ if boot 5; then
 else bad "could not boot a 5-tab server"; fi
 
 # ── a big workspace: the second tab row ────────────────────────────────────
-printf '\nbig workspace (12 tabs)\n'
-if boot 12; then
+# Names are deliberately long here. The split is by WIDTH now, so twelve short
+# tabs would correctly fit on one row and prove nothing about the second.
+printf '\nbig workspace (12 wide tabs)\n'
+if boot 12 "project-tab-"; then
   check "status grew to 3 rows"       "$( [[ "$(t show -t s -v status)" == 3 ]] && echo y )" "status=$(t show -t s -v status)"
   check "messages moved to row 2"     "$( [[ "$(t show -t s -v message-line)" == 2 ]] && echo y )"
+  check "every tab got a row"         "$( [[ "$(t list-windows -t s -F '#{@nachimux_row}' | grep -c '^[12]$')" == 12 ]] && echo y )" \
+                                      "unassigned tabs fall to row 0 and would double up"
+  check "both rows are used"          "$( [[ -n "$(t list-windows -t s -F '#{@nachimux_row}' | grep '^1$')" && -n "$(t list-windows -t s -F '#{@nachimux_row}' | grep '^2$')" ]] && echo y )"
+  # A tab must render on exactly one row -- the two loops are mirrored filters,
+  # so a filter that stops being each other's complement duplicates or drops tabs.
   L0="$(screen 3 | sed -n 1p)"; L1="$(screen 3 | sed -n 2p)"
-  check "row 0 carries tabs 1-9"      "$(printf '%s' "$L0" | grep -o 'w9')"  "row 0 was: '$L0'"
-  check "row 0 does NOT carry tab 10" "$( printf '%s' "$L0" | grep -q 'w10' || echo y )"
-  check "row 1 carries tabs 10+"      "$(printf '%s' "$L1" | grep -o 'w12')" "row 1 was: '$L1'"
+  dupes=0; missing=0
+  while read -r nm; do
+    a=0; b=0
+    printf '%s' "$L0" | grep -qF "$nm" && a=1
+    printf '%s' "$L1" | grep -qF "$nm" && b=1
+    (( a + b == 2 )) && dupes=$((dupes+1))
+    (( a + b == 0 )) && missing=$((missing+1))
+  done < <(t list-windows -t s -F '#{window_name}')
+  check "no tab is on both rows"      "$( (( dupes == 0 )) && echo y )" "$dupes tab(s) drawn twice"
+  check "no tab is on neither row"    "$( (( missing == 0 )) && echo y )" "$missing tab(s) drawn nowhere"
+  # Balance is the whole point of splitting by width rather than by decade.
+  # Real tabs in the -F string: tmux does NOT interpret \t, and a literal
+  # backslash-t collapses every field into one, which silently makes each tab
+  # measure 4 columns and the whole check meaningless.
+  spread="$(t list-windows -t s -F '#{@nachimux_row}	#{window_index}	#{window_name}' \
+    | awk -F'	' '{w=length($2)+length($3)+4; if($1==2) r2+=w; else r1+=w}
+                  END{d=r1-r2; if(d<0)d=-d; print d}')"
+  check "rows are within 25 cols"     "$( [[ "${spread:-999}" -le 25 ]] && echo y )" "spread is $spread columns"
   for r in 0 1 2; do
     check "status-format[$r] renders"  "$(t display -p -t s "#{E:status-format[$r]}" | tr -d ' ')"
   done
-  for w in 1 9 10 12; do
-    check "tab $w renders a label"     "$(t display -p -t s:=$w '#{E:@nachimux_tab_normal}' | grep -o "w$w")"
-  done
+fi
+
+# ── narrow tabs stay on one row ────────────────────────────────────────────
+printf '\nnarrow workspace (11 short tabs)\n'
+if boot 11; then
+  check "11 short tabs need one row"  "$( [[ "$(t show -t s -v status)" == 2 ]] && echo y )" \
+                                      "status=$(t show -t s -v status) — the old decade rule split these needlessly"
+  check "row 0 shows the last one"    "$(screen 1 | grep -o 'wkk')"
 fi
 
 # ── key tables ─────────────────────────────────────────────────────────────
