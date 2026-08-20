@@ -10,10 +10,10 @@
 #  on equal the key that reached it. Lovely property, lopsided result -- eleven
 #  tabs rendered as a row of nine and a row of two.
 #
-#  So it cuts for balance now, by rendered WIDTH rather than by count: tab names run
-#  from very short to very long, and an even split by count would still look
-#  nothing like even. Row 0 also has less room than row 1, because the
-#  workspace name sits on it, and the split accounts for that.
+#  So it cuts for balance now, by rendered WIDTH rather than by count: tab
+#  names run from very short to very long, and an even split by count would
+#  still look nothing like even. Row 0 also has less room than row 1,
+#  because the workspace name sits on it, and the split accounts for that.
 #
 #  Two rows only when one will not do. Most workspaces never need the second,
 #  and an always-on empty row costs a terminal line for nothing.
