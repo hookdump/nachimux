@@ -35,6 +35,7 @@ copy	COPY	Esc	copy
 paste	COPY	P	paste
 actions	MISC	p	actions
 help	MISC	/	help
+mute	MISC	M	mute
 reload	MISC	r	reload
 cmd	MISC	:	cmd
 keys	MISC	?	keys

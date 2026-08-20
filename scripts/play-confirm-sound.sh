@@ -7,6 +7,12 @@ SCRIPT_DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="${NACHIMUX_ROOT:-$(cd -P "$SCRIPT_DIR/.." && pwd)}"
 SOUND="${1:-${NACHIMUX_CONFIRM_SOUND:-$ROOT/sounds/tmux-action-confirm.mp3}}"
 
+# Muted is muted, whoever is asking. The hot path never reaches this script
+# when muted -- @nachimux_cue_action is `:` -- but the popups (palette, jump)
+# call it directly, and they have to agree. Read the state file rather than
+# asking tmux, so this stays a file test and not a fork.
+[[ -e "${XDG_STATE_HOME:-$HOME/.local/state}/nachimux/muted" ]] && exit 0
+
 [[ -r "$SOUND" ]] || exit 0
 
 if command -v afplay >/dev/null 2>&1; then

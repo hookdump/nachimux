@@ -60,6 +60,7 @@ Help & misc	prefix	/	Open the searchable nachimux help	nachimux-help
 Help & misc	prefix	r	Reload the tmux config	source-file ~/.tmux.conf	
 Help & misc	prefix	:	Open the tmux command prompt	command-prompt	
 Help & misc	prefix	?	List every key binding	list-keys	
+Help & misc	prefix	M	Mute or unmute the confirmation cues (the bar shows a 🔇 while muted)		
 Help & misc	palette	—	Toggle mouse on or off	set -g mouse	
 Help & misc	palette	—	Show the big clock	clock-mode	
 Help & misc	shell	tmux source-file ~/.tmux.conf	Reload the config from the shell		
