@@ -8,6 +8,7 @@ Tabs	prefix	g	Find any tab in any workspace (ctrl-a all · ctrl-r recent · ctrl
 Workspaces	prefix	d	Detach and leave everything running	detach-client	
 Workspaces	prefix	$	Rename the current workspace	command-prompt -I "#S" "rename-session '%%'"	
 Workspaces	prefix	N	Create a new workspace	command-prompt -p "new workspace name:" "new-session -s '%%'"	
+Workspaces	prefix	W	Recent workspaces — switch by where you have been, not by position	scripts/find.sh	
 Workspaces	shell	tmux ls	List all workspaces (sessions)		
 Workspaces	shell	tmux a -t NAME	Attach to a workspace by name		
 Tabs	prefix	t	New tab in the current directory	new-window -c "#{pane_current_path}"	

@@ -11,10 +11,12 @@
 #  so that is what this is:
 #
 #      all      every tab in every workspace, grouped under its workspace
-#      recent   most-recently-visited first (the global MRU)
+#      recent   most-recently-visited tabs first (the global MRU)
 #      needs    only the tabs asking for you (@attention or a bell)
+#      ws       workspaces, most-recently-visited first
 #
-#  and you switch between them AFTER it is open -- ctrl-a / ctrl-r / ctrl-n --
+#  and you switch between them AFTER it is open -- ctrl-a / ctrl-r / ctrl-n /
+#  ctrl-w --
 #  so a wrong guess costs a keystroke instead of a reopen. The old keys still
 #  work; each one just opens this at its own mode.
 #
@@ -34,6 +36,7 @@ SCRIPT_DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="${NACHIMUX_ROOT:-$(cd -P "$SCRIPT_DIR/.." && pwd)}"
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/nachimux"
 MRU_FILE="$STATE_DIR/tab-mru"
+WS_MRU_FILE="$STATE_DIR/ws-mru"
 
 CUR_SESSION="${NACHI_FIND_SESSION:-}"
 CUR_WINDOW="${NACHI_FIND_WINDOW:-}"
@@ -112,10 +115,45 @@ rows_needs() {
              -F '#{window_id}	#{session_name}	#{window_name}' 2>/dev/null)
 }
 
+# Workspaces by recency rather than by position. Kept separate from the tab MRU
+# because bouncing around four tabs of one project should not evict every other
+# project from the workspace list.
+#
+# Recency ORDERS the list, it does not filter it: a workspace you have not
+# touched since the MRU started still has to be reachable, so anything missing
+# from the list gets appended after it. Stale ids (a workspace that has since
+# been killed) are dropped on the way through.
+rows_ws() {
+  local n=0 sid name windows cur map seen=""
+  map="$(tmux list-sessions -F '#{session_id}	#{session_name}	#{session_windows}' 2>/dev/null)"
+
+  emit_ws() { # emit_ws <session_id>
+    cur="$(printf '%s\n' "$map" | awk -F'	' -v s="$1" '$1==s{print $2 "	" $3; exit}')"
+    [[ -z "$cur" ]] && return 1
+    name="${cur%%	*}"; windows="${cur#*	}"
+    [[ "$1" == "$CUR_SESSION" ]] && name="${CURCOL}${name}${RST}"
+    emit_flat "$n" "$name" "$windows tabs" "$1" ""
+    n=$((n + 1)); seen="$seen $1 "
+    return 0
+  }
+
+  if [[ -f "$WS_MRU_FILE" ]]; then
+    while IFS= read -r sid; do
+      [[ -z "$sid" ]] && continue
+      emit_ws "$sid" || true
+    done < "$WS_MRU_FILE"
+  fi
+  while IFS=$'	' read -r sid name windows; do
+    [[ -z "$sid" || "$seen" == *" $sid "* ]] && continue
+    emit_ws "$sid" || true
+  done <<< "$map"
+}
+
 rows() {
   case "$1" in
     recent) rows_recent ;;
     needs)  rows_needs ;;
+    ws)     rows_ws ;;
     *)      rows_all ;;
   esac
 }
@@ -129,9 +167,14 @@ FZF="$(command -v fzf || true)"
 MODE="${NACHI_FIND_MODE:-all}"
 SELF="$(printf '%q' "$SCRIPT_DIR/find.sh")"
 
-prompt_for() { case "$1" in recent) printf '  ↩ recent › ';; needs) printf '  🔔 needs you › ';; *) printf '  ⌕ all tabs › ';; esac; }
+prompt_for() { case "$1" in
+  recent) printf '  ↩ recent › ';;
+  needs)  printf '  🔔 needs you › ';;
+  ws)     printf '  ▤ workspaces › ';;
+  *)      printf '  ⌕ all tabs › ';;
+esac; }
 
-HDR='ctrl-a all · ctrl-r recent · ctrl-n needs you   ·   alt-a…l jump · ↑↓ · enter · esc'
+HDR='ctrl-a all · ctrl-r recent · ctrl-n needs · ctrl-w workspaces   ·   alt-a…l · ↑↓ · enter · esc'
 
 COLORS="bg+:#313244,bg:#1e1e2e,fg:#cdd6f4,fg+:#cdd6f4,hl:#f9e2af,hl+:#f9e2af"
 COLORS="$COLORS,pointer:#cba6f7,prompt:#cba6f7,header:#6c7086,border:#585b70,info:#6c7086"
@@ -142,7 +185,7 @@ binds="esc:abort,ctrl-j:down,ctrl-k:up"
 i=0; while [[ $i -lt ${#KEYS} ]]; do
   binds="${binds},alt-${KEYS:$i:1}:pos($((i + 1)))+accept"; i=$((i + 1))
 done
-for m in all recent needs; do
+for m in all recent needs ws; do
   binds="${binds},ctrl-${m:0:1}:change-prompt($(prompt_for "$m"))+reload($SELF rows $m)"
 done
 

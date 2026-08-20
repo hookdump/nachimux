@@ -112,7 +112,7 @@ check "bell raises the count"         "$(t show-hooks -g | grep -o 'alert-bell')
 # All three modes emit the same two-field contract, which is the whole reason
 # fzf can swap between them with reload() and never know which one it is showing.
 printf '\nfinder\n'
-for m in all recent needs; do
+for m in all recent needs ws; do
   bad_rows="$("$ROOT/scripts/find.sh" rows "$m" 2>/dev/null | awk -F'\t' 'NF!=2{print NR}' | head -1)"
   check "mode '$m' emits display+target rows" "$( [[ -z "$bad_rows" ]] && echo y )" "row $bad_rows has the wrong field count"
 done
@@ -121,6 +121,15 @@ for k in g f B n; do
   check "prefix $k opens the finder"   "$(t list-keys -T prefix | grep -E "^bind-key +-T prefix $k " | grep -o 'find.sh')"
 done
 check "prefix w keeps its own switcher" "$(t list-keys -T prefix | grep -E '^bind-key +-T prefix w ' | grep -o 'choose-tree')"
+check "prefix W opens workspaces"      "$(t list-keys -T prefix | grep -E '^bind-key +-T prefix W ' | grep -o 'NACHI_FIND_MODE ws')"
+# Recency orders the workspace list; it must never shorten it.
+ws_rows="$("$ROOT/scripts/find.sh" rows ws 2>/dev/null | grep -c .)"
+n_sess="$(t list-sessions 2>/dev/null | grep -c .)"
+check "every workspace is listed"      "$( [[ "$ws_rows" -ge 1 ]] && echo y )" "listed $ws_rows"
+# session_id is literally $0/$2/... -- unquoted in a run-shell command the shell
+# eats it and $0 becomes "sh". Both MRU hooks must quote their ids.
+check "MRU hooks quote their ids"      "$(grep -c "record-mru.sh '#{window_id}' '#{session_id}'" "$CONF" | grep -x 2)" \
+                                       "an unquoted session_id records the literal string sh"
 
 # ── the palette flips ──────────────────────────────────────────────────────
 printf '\ntheme\n'
