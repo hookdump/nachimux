@@ -53,6 +53,19 @@ boot() { # boot <windows> [name-prefix]  — real config, real attached client
   sleep 3
 }
 screen(){ tmux -L $OUT capture-pane -p -t host 2>/dev/null | head -"${1:-4}"; }
+
+# Screen reads race the redraw: capture-pane returns whatever is on the terminal
+# at that instant, and a bar that is about to repaint reads as empty. Retry
+# briefly instead of asserting on one sample.
+screen_has(){ # screen_has <lines> <pattern>
+  local i out
+  for i in 1 2 3 4 5 6 7 8; do
+    out="$(screen "$1" | grep -o "$2" | head -1)"
+    [[ -n "$out" ]] && { printf '%s' "$out"; return 0; }
+    sleep 0.4
+  done
+  return 0
+}
 t(){ tmux -L $IN "$@" 2>/dev/null; }
 
 printf '\nnachimux smoke test\n\n'
@@ -68,7 +81,7 @@ if boot 5; then
   check "status is 2 rows"            "$( [[ "$(t show -t s -v status)" == 2 ]] && echo y )" "status=$(t show -t s -v status)"
   check "messages avoid the tab row"  "$( [[ "$(t show -t s -v message-line)" == 1 ]] && echo y )"
   S="$(screen 1)"
-  check "row 0 has tabs on it"        "$(printf '%s' "$S" | grep -o 'waa')" "row 0 was: '$S'"
+  check "row 0 has tabs on it"        "$(screen_has 1 'waa')" "row 0 was: '$S'"
   check "row 0 has the workspace name" "$(printf '%s' "$S" | grep -o ' s ')"
   for r in 0 1; do
     check "status-format[$r] renders"  "$(t display -p -t s "#{E:status-format[$r]}" | tr -d ' ')"
@@ -87,7 +100,12 @@ if boot 12 "project-tab-"; then
   check "both rows are used"          "$( [[ -n "$(t list-windows -t s -F '#{@nachimux_row}' | grep '^1$')" && -n "$(t list-windows -t s -F '#{@nachimux_row}' | grep '^2$')" ]] && echo y )"
   # A tab must render on exactly one row -- the two loops are mirrored filters,
   # so a filter that stops being each other's complement duplicates or drops tabs.
-  L0="$(screen 3 | sed -n 1p)"; L1="$(screen 3 | sed -n 2p)"
+  # Wait for the bar to actually be painted before comparing rows: capture-pane
+  # returns whatever is on the terminal right now, and mid-redraw that is blank.
+  first="$(t list-windows -t s -F '#{window_name}' | head -1)"
+  screen_has 3 "$first" >/dev/null
+  cap="$(screen 3)"
+  L0="$(printf '%s' "$cap" | sed -n 1p)"; L1="$(printf '%s' "$cap" | sed -n 2p)"
   dupes=0; missing=0
   while read -r nm; do
     a=0; b=0
@@ -116,7 +134,7 @@ printf '\nnarrow workspace (11 short tabs)\n'
 if boot 11; then
   check "11 short tabs need one row"  "$( [[ "$(t show -t s -v status)" == 2 ]] && echo y )" \
                                       "status=$(t show -t s -v status) — the old decade rule split these needlessly"
-  check "row 0 shows the last one"    "$(screen 1 | grep -o 'wkk')"
+  check "row 0 shows the last one"    "$(screen_has 1 'wkk')"
 fi
 
 # ── key tables ─────────────────────────────────────────────────────────────
