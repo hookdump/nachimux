@@ -108,6 +108,20 @@ check "window-unlinked survived"      "$(t show-hooks -g | grep 'window-unlinked
 check "window-unlinked recounts too"  "$(t show-hooks -g | grep 'window-unlinked' | grep -o 'attention-badge')"
 check "bell raises the count"         "$(t show-hooks -g | grep -o 'alert-bell')"
 
+# ── the finder ─────────────────────────────────────────────────────────────
+# All three modes emit the same two-field contract, which is the whole reason
+# fzf can swap between them with reload() and never know which one it is showing.
+printf '\nfinder\n'
+for m in all recent needs; do
+  bad_rows="$("$ROOT/scripts/find.sh" rows "$m" 2>/dev/null | awk -F'\t' 'NF!=2{print NR}' | head -1)"
+  check "mode '$m' emits display+target rows" "$( [[ -z "$bad_rows" ]] && echo y )" "row $bad_rows has the wrong field count"
+done
+check "'all' lists every tab"          "$( [[ "$("$ROOT/scripts/find.sh" rows all 2>/dev/null | grep -c .)" -ge 12 ]] && echo y )"
+for k in g f B n; do
+  check "prefix $k opens the finder"   "$(t list-keys -T prefix | grep -E "^bind-key +-T prefix $k " | grep -o 'find.sh')"
+done
+check "prefix w keeps its own switcher" "$(t list-keys -T prefix | grep -E '^bind-key +-T prefix w ' | grep -o 'choose-tree')"
+
 # ── the palette flips ──────────────────────────────────────────────────────
 printf '\ntheme\n'
 t run-shell "$ROOT/scripts/theme.sh dark" >/dev/null; sleep 0.6

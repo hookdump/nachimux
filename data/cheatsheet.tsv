@@ -2,9 +2,9 @@ category	mode	keys	description	command	confirm
 Workspaces	prefix	w	Switch or kill a workspace (tree view; F1 for help)	choose-tree -Zs	
 Workspaces	prefix	)	Next workspace	switch-client -n	
 Workspaces	prefix	(	Previous workspace	switch-client -p	
-Tabs	prefix	B	Recent tabs — lettered popup of last-visited tabs (all workspaces)	scripts/pick-window.sh	
-Tabs	prefix	n	Needs you — lettered popup of tabs asking for attention	scripts/pick-window.sh	
-Workspaces	prefix	g	Jump to any tab in any workspace (fuzzy popup)		
+Tabs	prefix	B	Recent tabs — the finder, opened on the most-recently-visited list	scripts/find.sh	
+Tabs	prefix	n	Needs you — the finder, opened on the tabs asking for attention	scripts/find.sh	
+Tabs	prefix	g	Find any tab in any workspace (ctrl-a all · ctrl-r recent · ctrl-n needs you)	scripts/find.sh	
 Workspaces	prefix	d	Detach and leave everything running	detach-client	
 Workspaces	prefix	$	Rename the current workspace	command-prompt -I "#S" "rename-session '%%'"	
 Workspaces	prefix	N	Create a new workspace	command-prompt -p "new workspace name:" "new-session -s '%%'"	
@@ -22,7 +22,7 @@ Tabs	prefix	X	Close the current tab	kill-window	Close this tab?
 Tabs	prefix	F	Add this tab to the FOCUS workspace (linked: same tab in two places, not a copy)	run-shell "#{@nachimux_root}/scripts/focus.sh add '#{window_id}'"	
 Tabs	prefix	U	Remove this tab from THIS workspace only (safe: never kills it, unlike X)	run-shell "#{@nachimux_root}/scripts/focus.sh unlink '#{session_id}' '#{window_index}' '#{window_id}' '#{window_linked_sessions}'"	
 Tabs	prefix	C-f	Build the FOCUS workspace from a list (tab marks, enter adds, ctrl-x replaces)	display-popup -E -w 60% -h 60% -T " nachimux · focus " 'exec /bin/bash "$NACHIMUX_ROOT/scripts/focus.sh" pick'	
-Tabs	prefix	f	Find a tab by name	find-window	
+Tabs	prefix	f	Find a tab by name — the same finder, cursor in the search box	scripts/find.sh	
 Tabs	prefix	m	Move this tab to another workspace (pick from the tree)	choose-tree -Zs "move-window -t '%%'"	
 Tabs	prefix	b	Last tab (or last workspace, if you haven't switched tabs since entering this one)	if-shell -F '#{@tab_switched}' 'last-window' 'switch-client -l'	
 Splits	prefix	-	Split top / bottom in the current directory	split-window -v -c "#{pane_current_path}"	
