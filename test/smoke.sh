@@ -137,6 +137,20 @@ check "no hook is declared twice"     "$( [[ -z "$dupes" ]] && echo y )" "declar
 check "window-unlinked survived"      "$(t show-hooks -g | grep 'window-unlinked' | grep -o 'tab-rows')"
 check "window-unlinked recounts too"  "$(t show-hooks -g | grep 'window-unlinked' | grep -o 'attention-badge')"
 check "bell raises the count"         "$(t show-hooks -g | grep -o 'alert-bell')"
+# A tmux single-quoted string cannot contain a single quote. Adding one to a
+# '...' hook body ends it early and leaves the hook EMPTY -- no error, the work
+# just silently stops happening. Both MRU hooks and pane-focus-in have been
+# broken this way; assert every declared hook actually has a body.
+empty_hooks=""
+while read -r hname; do
+  [[ -z "$hname" ]] && continue
+  # Hooks live in two scopes: session (show-hooks -g) and window (-gw).
+  # pane-focus-in and window-renamed are window-scope and do not appear in -g
+  # at all, so checking only one scope reports live hooks as missing.
+  body="$( { t show-hooks -g; t show-hooks -gw; } | awk -v h="$hname" '$1 ~ "^" h "\\[" {sub(/^[^ ]+ /,""); print; exit}')"
+  [[ -z "$body" ]] && empty_hooks="$empty_hooks $hname"
+done < <(grep -E '^set-hook' "$CONF" | grep -oE 'set-hook -a?g [a-z-]+' | awk '{print $3}' | sort -u)
+check "no hook has an empty body"     "$( [[ -z "$empty_hooks" ]] && echo y )" "empty:$empty_hooks"
 
 # ── the finder ─────────────────────────────────────────────────────────────
 # All three modes emit the same two-field contract, which is the whole reason
@@ -176,6 +190,16 @@ t rename-window -t "$nw" 'Pinned By Hand' 2>/dev/null; sleep 0.5
 check "renaming pins the window"       "$( [[ "$(t show -w -t "$nw" -v automatic-rename)" == off ]] && echo y )" \
                                        "manual names would drift"
 check "the hand-given name stuck"      "$( [[ "$(t display -p -t "$nw" '#{window_name}')" == 'Pinned By Hand' ]] && echo y )"
+
+# ── git in the bar ─────────────────────────────────────────────────────────
+printf '\ngit\n'
+check "status-left carries the branch"  "$(t show -gv status-left | grep -o '@nachimux_git')"
+"$ROOT/scripts/git-status.sh" "$ROOT" >/dev/null 2>&1
+check "reports a branch in a repo"      "$(t show -gv @nachimux_git 2>/dev/null; git -C "$ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null)"
+"$ROOT/scripts/git-status.sh" /tmp >/dev/null 2>&1
+check "reports nothing outside one"     "$( [[ -z "$("$ROOT/scripts/git-status.sh" /tmp >/dev/null 2>&1; tmux show -gv @nachimux_git 2>/dev/null)" ]] && echo y )"
+check "never writes to the repo"        "$(grep -c 'no-optional-locks' "$ROOT/scripts/git-status.sh" | grep -qE '^[1-9]' && echo y)" \
+                                        "git can take a lock just by being asked; --no-optional-locks stops that"
 
 # ── the palette flips ──────────────────────────────────────────────────────
 printf '\ntheme\n'
