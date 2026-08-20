@@ -236,6 +236,22 @@ check "and it stays dismissed"          "$( [[ -z "$(t show -gv @nachimux_restor
 check "restoring clears the offer"      "$(t list-keys -T prefix | grep -E '^bind-key +-T prefix C-r ' | grep -o 'restore-hint.sh clear')"
 rm -rf "$rdir"; t set -gu @resurrect-dir 2>/dev/null
 
+# ── FOCUS sizing ───────────────────────────────────────────────────────────
+# A FOCUS tab is one window in two workspaces. Under window-size `latest` a
+# small client viewing FOCUS shrinks that tab in its home workspace too.
+printf '\nfocus sizing\n'
+t run-shell "$ROOT/scripts/focus.sh size" 2>/dev/null; sleep 0.4
+check "latest while no FOCUS exists"    "$( [[ "$(t show -gv window-size)" == latest ]] && echo y )" \
+                                        "window-size is $(t show -gv window-size)"
+t new-session -d -s FOCUS 2>/dev/null
+t run-shell "$ROOT/scripts/focus.sh size" 2>/dev/null; sleep 0.4
+check "largest once FOCUS exists"       "$( [[ "$(t show -gv window-size)" == largest ]] && echo y )" \
+                                        "a small client would shrink shared tabs everywhere"
+t kill-session -t '=FOCUS' 2>/dev/null; sleep 0.6
+t run-shell "$ROOT/scripts/focus.sh size" 2>/dev/null; sleep 0.4
+check "back to latest when it is gone"  "$( [[ "$(t show -gv window-size)" == latest ]] && echo y )"
+check "session-closed re-derives it"    "$(t show-hooks -g | grep 'session-closed' | grep -o 'focus.sh size')"
+
 # ── git in the bar ─────────────────────────────────────────────────────────
 printf '\ngit\n'
 check "status-left carries the branch"  "$(t show -gv status-left | grep -o '@nachimux_git')"

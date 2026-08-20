@@ -41,6 +41,26 @@ focus_ids()  { tmux list-windows -t "=$FOCUS" -F '#{window_id}' 2>/dev/null; }
 focus_count(){ focus_ids | grep -c . | tr -d ' '; }
 win_name()   { tmux display-message -p -t "$1" '#{window_name}' 2>/dev/null; }
 
+# ── sizing, which is not optional once tabs are shared ──────────────────────
+# A FOCUS tab is ONE window shown in two workspaces, and window-size `latest`
+# means whichever client touched it last decides how big it is. So attaching to
+# FOCUS from a small terminal quietly shrinks that tab in its home workspace
+# too -- the config has warned about this in a comment since FOCUS landed,
+# without ever doing anything about it.
+#
+# `largest` inverts the trade: the window stays as big as the biggest client
+# viewing it, and a smaller client pans around it instead of forcing everyone
+# down to its size. That is the right way round for shared tabs, and the wrong
+# way round for everything else, which is why it is applied only while a FOCUS
+# workspace actually exists and dropped again the moment it does not.
+sync_window_size() {
+  if has_focus; then
+    tmux set -g window-size largest 2>/dev/null || true
+  else
+    tmux set -g window-size latest  2>/dev/null || true
+  fi
+}
+
 # A session can't be created empty, so a brand-new FOCUS is born holding one
 # throwaway window that gets dropped as soon as a real tab is linked in.
 PLACEHOLDER=""
@@ -212,5 +232,10 @@ case "${1:-pick}" in
   unlink) shift; cmd_unlink "$@" ;;
   go)     shift; cmd_go "$@" ;;
   pick)   shift; cmd_pick "$@" ;;
+  size)   sync_window_size; exit 0 ;;      # for the session-closed hook
   *)      sed -n '2,30p' "$0" ;;
 esac
+
+# Any of the above can be the moment FOCUS came into existence or stopped
+# existing, so the sizing rule is re-derived rather than tracked.
+sync_window_size
