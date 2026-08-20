@@ -105,14 +105,19 @@ rows_recent() {
   done < "$MRU_FILE"
 }
 
+# Targets the waiting PANE when one is known, so a four-split tab does not hand
+# you the tab and leave you hunting. tmux resolves a %pane target all the way
+# down, so the caller does not have to care which kind of id it got.
 rows_needs() {
-  local n=0 wid sess win
-  while IFS=$'\t' read -r wid sess win; do
+  local n=0 wid sess win panes target
+  while IFS=$'\t' read -r wid sess win panes; do
     [[ -z "$wid" ]] && continue
-    emit_flat "$n" "$win" "$sess" "$wid" "$YELLOW"
+    target="$wid"
+    [[ -n "$panes" ]] && target="${panes%% *}"
+    emit_flat "$n" "$win" "$sess" "$target" "$YELLOW"
     n=$((n + 1))
   done < <(tmux list-windows -a -f '#{||:#{@attention},#{window_bell_flag}}' \
-             -F '#{window_id}	#{session_name}	#{window_name}' 2>/dev/null)
+             -F '#{window_id}	#{session_name}	#{window_name}	#{@attention_panes}' 2>/dev/null)
 }
 
 # Workspaces by recency rather than by position. Kept separate from the tab MRU

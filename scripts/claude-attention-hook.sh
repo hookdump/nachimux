@@ -24,11 +24,9 @@ if [ "${attached:-0}" != "0" ] && [ "${wactive:-0}" = "1" ] && [ "${pactive:-0}"
   exit 0
 fi
 
-tmux set-option -w -t "$TMUX_PANE" @attention 1 2>/dev/null
-
-# The bar's count is event-driven, and this is one of the two events that can
-# raise it. We are outside tmux's hook system here -- this runs inside Claude --
-# so nothing recounts for us.
+# Raise it against the PANE, not just the tab. In a four-split tab, "this one
+# finished" is the useful fact, and we are the only thing that knows it --
+# $TMUX_PANE is right here, and the old code discarded it.
 ROOT="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-"$ROOT/attention-badge.sh" 2>/dev/null &
+"$ROOT/attention.sh" raise "$TMUX_PANE" 2>/dev/null &
 exit 0

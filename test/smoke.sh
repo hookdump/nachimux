@@ -135,7 +135,7 @@ printf '\nhooks\n'
 dupes="$(grep -E '^set-hook' "$CONF" | grep -oE 'set-hook -a?g [a-z-]+' | awk '{print $3}' | sort | uniq -d)"
 check "no hook is declared twice"     "$( [[ -z "$dupes" ]] && echo y )" "declared more than once: $dupes"
 check "window-unlinked survived"      "$(t show-hooks -g | grep 'window-unlinked' | grep -o 'tab-rows')"
-check "window-unlinked recounts too"  "$(t show-hooks -g | grep 'window-unlinked' | grep -o 'attention-badge')"
+check "window-unlinked recounts too"  "$(t show-hooks -g | grep 'window-unlinked' | grep -o 'attention.sh')"
 check "bell raises the count"         "$(t show-hooks -g | grep -o 'alert-bell')"
 # A tmux single-quoted string cannot contain a single quote. Adding one to a
 # '...' hook body ends it early and leaves the hook EMPTY -- no error, the work
@@ -190,6 +190,28 @@ t rename-window -t "$nw" 'Pinned By Hand' 2>/dev/null; sleep 0.5
 check "renaming pins the window"       "$( [[ "$(t show -w -t "$nw" -v automatic-rename)" == off ]] && echo y )" \
                                        "manual names would drift"
 check "the hand-given name stuck"      "$( [[ "$(t display -p -t "$nw" '#{window_name}')" == 'Pinned By Hand' ]] && echo y )"
+
+# ── attention ──────────────────────────────────────────────────────────────
+# The flag is per-pane now. Looking at one split must not answer for the others.
+printf '\nattention\n'
+t split-window -d -t s:1 2>/dev/null; t split-window -d -t s:1 2>/dev/null; sleep 0.5
+pa="$(t list-panes -t s:1 -F '#{pane_id}' | sed -n 2p)"
+pb="$(t list-panes -t s:1 -F '#{pane_id}' | sed -n 3p)"
+t run-shell "$ROOT/scripts/attention.sh raise $pa" 2>/dev/null; sleep 0.4
+t run-shell "$ROOT/scripts/attention.sh raise $pb" 2>/dev/null; sleep 0.6
+check "two panes both register"        "$( [[ "$(t show -w -t s:1 -v @attention_panes 2>/dev/null)" == "$pa $pb" ]] && echo y )" \
+                                       "list is [$(t show -w -t s:1 -v @attention_panes 2>/dev/null)]"
+check "the tab is flagged"             "$(t show -w -t s:1 -v @attention 2>/dev/null)"
+t run-shell "$ROOT/scripts/attention.sh clear $pa" 2>/dev/null; sleep 0.6
+check "clearing one keeps the tab lit" "$(t show -w -t s:1 -v @attention 2>/dev/null)" \
+                                       "one pane was still waiting and the tab went dark"
+t run-shell "$ROOT/scripts/attention.sh clear $pb" 2>/dev/null; sleep 0.6
+check "clearing both unflags the tab"  "$( [[ -z "$(t show -w -t s:1 -v @attention 2>/dev/null)" ]] && echo y )"
+check "the badge follows"              "$( [[ -z "$(t show -gv @nachimux_attn_count)" ]] && echo y )"
+t run-shell "$ROOT/scripts/attention.sh raise $pa" 2>/dev/null; sleep 0.6
+check "needs targets the pane"         "$("$ROOT/scripts/find.sh" rows needs 2>/dev/null; t list-windows -a -F '#{@attention_panes}' | grep -o '%')" 
+check "the Claude hook raises a pane"  "$(grep -o 'raise "\$TMUX_PANE"' "$ROOT/scripts/claude-attention-hook.sh")"
+t run-shell "$ROOT/scripts/attention.sh clear $pa" 2>/dev/null
 
 # ── git in the bar ─────────────────────────────────────────────────────────
 printf '\ngit\n'
