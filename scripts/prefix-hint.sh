@@ -26,6 +26,25 @@ DEFAULT_PINS=(newtab workspaces tabs tabs10 split actions)
 # Category headers are rendered in this order; only non-empty ones appear.
 CATEGORY_ORDER=(TABS WS SPLIT COPY MISC)
 
+# A category can also carry a CONDITION: a tmux format deciding whether it is
+# worth showing right now. The split keys are noise in a tab with no splits,
+# and that is most tabs most of the time.
+#
+# The group is stashed in its own option and referenced from inside the
+# conditional rather than inlined, because a label containing a comma would
+# otherwise split the #{?a,b,c} it sits in -- the same trap that has bitten
+# every other format in this config.
+#
+# #{!=:...,1} rather than #{>:...,1}: those operators compare STRINGS, so
+# "2" > "1" is true by luck and "10" > "1" is false. window_panes is never
+# below 1, so "not exactly one" is the honest test.
+cat_condition() {
+  case "$1" in
+    SPLIT) printf '#{!=:#{window_panes},1}' ;;
+    *)     printf '' ;;
+  esac
+}
+
 # Pill caps in the theme's prefix accent. These are tmux FORMATS, not literal
 # hexes: the option is expanded at draw time, so a light/dark flip repaints the
 # bar without this script having to know a single colour. scripts/theme.sh owns
@@ -72,8 +91,17 @@ build() {
       gn=$((gn + 1))
     done
     (( gn == 0 )) && continue
-    [[ -n "$content" ]] && content+="   "
-    content+="#[bold]${cat}#[nobold] ${group}"
+    local rendered="#[bold]${cat}#[nobold] ${group}"
+    local cond; cond="$(cat_condition "$cat")"
+    if [[ -n "$cond" ]]; then
+      # Stash the group, reference it conditionally. The leading gap goes inside
+      # the conditional too, so a hidden group leaves no double space behind.
+      tmux set -g "@nachimux_hint_${cat}" "${content:+   }${rendered}" 2>/dev/null || true
+      content+="#{?${cond},#{E:@nachimux_hint_${cat}},}"
+    else
+      [[ -n "$content" ]] && content+="   "
+      content+="$rendered"
+    fi
   done
 
   local hint=""

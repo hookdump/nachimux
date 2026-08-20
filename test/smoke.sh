@@ -252,6 +252,26 @@ t run-shell "$ROOT/scripts/focus.sh size" 2>/dev/null; sleep 0.4
 check "back to latest when it is gone"  "$( [[ "$(t show -gv window-size)" == latest ]] && echo y )"
 check "session-closed re-derives it"    "$(t show-hooks -g | grep 'session-closed' | grep -o 'focus.sh size')"
 
+# ── context-sensitive hints ────────────────────────────────────────────────
+printf '\nhint bar\n'
+"$ROOT/scripts/prefix-hint.sh" build 2>/dev/null; sleep 0.3
+check "the split group is conditional"  "$(t show -gv @nachimux_prefix_hint | grep -o 'window_panes')" \
+                                        "split keys would show in tabs with no splits"
+check "the group is stashed, not inlined" "$(t show -gv @nachimux_prefix_hint | grep -o '@nachimux_hint_SPLIT')" \
+                                        "inlining it lets a label comma split the conditional"
+# A fresh window: earlier blocks split the existing ones.
+t new-window -d -t s 2>/dev/null; sleep 0.5
+w1="$(t list-windows -t s -F '#{window_id}' | tail -1)"
+check "hidden with one pane"            "$( [[ -z "$(t display -p -t "$w1" '#{?#{!=:#{window_panes},1},x,}')" ]] && echo y )" \
+                                        "that window has $(t display -p -t "$w1" '#{window_panes}') panes"
+t split-window -d -t "$w1" 2>/dev/null; sleep 0.5
+check "shown once it has splits"        "$(t display -p -t "$w1" '#{?#{!=:#{window_panes},1},x,}')"
+# Every operand of #{||:} must be wrapped in #{}. A bare `client_prefix` is the
+# literal string, which is non-empty, which is TRUE -- so the condition fires
+# always and whatever it guards never appears.
+check "no bare operand in #{||:}"       "$( grep -qE '#\{\|\|:[a-z_]+,' "$CONF" && echo '' || echo y )" \
+                                        "an unwrapped operand is always true"
+
 # ── git in the bar ─────────────────────────────────────────────────────────
 printf '\ngit\n'
 check "status-left carries the branch"  "$(t show -gv status-left | grep -o '@nachimux_git')"
