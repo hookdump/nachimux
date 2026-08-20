@@ -213,6 +213,29 @@ check "needs targets the pane"         "$("$ROOT/scripts/find.sh" rows needs 2>/
 check "the Claude hook raises a pane"  "$(grep -o 'raise "\$TMUX_PANE"' "$ROOT/scripts/claude-attention-hook.sh")"
 t run-shell "$ROOT/scripts/attention.sh clear $pa" 2>/dev/null
 
+# ── the saved-layout offer ─────────────────────────────────────────────────
+# It must OFFER and never impose: no auto-restore, and silence when there is
+# nothing worth offering.
+printf '\nsaved layout\n'
+check "auto-restore stays off"          "$( [[ "$(t show -gv @continuum-restore)" == off ]] && echo y )" \
+                                        "restoring without being asked is the thing this must never do"
+check "the hint has a home in the bar"  "$(t show -gv @nachimux_row_hints | grep -o '@nachimux_restore_hint')"
+rdir=$(mktemp -d)
+t set -g @resurrect-dir "$rdir" 2>/dev/null
+t set -gu @nachimux_restore_dismissed 2>/dev/null
+t run-shell "$ROOT/scripts/restore-hint.sh check" 2>/dev/null; sleep 0.4
+check "silent with no saves"            "$( [[ -z "$(t show -gv @nachimux_restore_hint 2>/dev/null)" ]] && echo y )"
+printf 'window\t0\t1\nwindow\t0\t2\n' > "$rdir/tmux_resurrect_x.txt"
+t run-shell "$ROOT/scripts/restore-hint.sh check" 2>/dev/null; sleep 0.4
+check "offers when a save exists"       "$(t show -gv @nachimux_restore_hint 2>/dev/null | grep -o 'C-r')"
+check "it counts what is in the save"   "$(t show -gv @nachimux_restore_hint 2>/dev/null | grep -o '2 tabs')"
+t run-shell "$ROOT/scripts/restore-hint.sh dismiss" 2>/dev/null; sleep 0.4
+check "dismissing silences it"          "$( [[ -z "$(t show -gv @nachimux_restore_hint 2>/dev/null)" ]] && echo y )"
+t run-shell "$ROOT/scripts/restore-hint.sh check" 2>/dev/null; sleep 0.4
+check "and it stays dismissed"          "$( [[ -z "$(t show -gv @nachimux_restore_hint 2>/dev/null)" ]] && echo y )"
+check "restoring clears the offer"      "$(t list-keys -T prefix | grep -E '^bind-key +-T prefix C-r ' | grep -o 'restore-hint.sh clear')"
+rm -rf "$rdir"; t set -gu @resurrect-dir 2>/dev/null
+
 # ── git in the bar ─────────────────────────────────────────────────────────
 printf '\ngit\n'
 check "status-left carries the branch"  "$(t show -gv status-left | grep -o '@nachimux_git')"
