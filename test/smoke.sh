@@ -297,5 +297,30 @@ printf '\ncheatsheet\n'
 K="$("$ROOT/nachimux" doctor --keys 2>/dev/null)"
 check "doctor --keys reports clean"   "$(printf '%s' "$K" | grep -o '\[ok\]')" "$(printf '%s' "$K" | grep '\[fail\]' | head -3)"
 
+# ── setup / uninstall ──────────────────────────────────────────────────────
+# Exercised against a throwaway HOME so the real one is never touched. No
+# network here: the clone path is covered by the ordering assertions instead.
+printf '\nsetup / uninstall\n'
+check "setup installs TPM itself"       "$(grep -o 'clone_tpm' "$ROOT/nachimux" | head -1)" \
+                                        "setup used to stop and ask you to clone it by hand"
+check "plugins install after the reload" "$( awk '/clone_tpm \|\| return 1/{c=NR} /install_plugins_now/{if(c && NR>c){print "y"; exit}}' "$ROOT/nachimux" )" \
+                                        "TPM asks a RUNNING server which plugins to fetch, so order matters"
+check "install result is verified"      "$(grep -o 'No plugins were installed' "$ROOT/nachimux")" \
+                                        "TPM exits 0 even when it installs nothing"
+
+sbox="$(mktemp -d)"
+mkdir -p "$sbox/.local/bin" "$sbox/.local/state/nachimux"
+: > "$sbox/.local/state/nachimux/prefix-pins"
+ln -s /bin/echo "$sbox/.local/bin/nachimux"
+printf "# mine\nset -g mouse on\nsource-file '%s'\nset -g status on\n" "$CONF" > "$sbox/.tmux.conf"
+HOME="$sbox" "$ROOT/nachimux" uninstall >/dev/null 2>&1
+check "leaves a foreign link alone"     "$( [[ "$(readlink "$sbox/.local/bin/nachimux")" == /bin/echo ]] && echo y )"
+check "removes only the source line"    "$( [[ "$(grep -c . "$sbox/.tmux.conf")" == 3 ]] && echo y )" \
+                                        "left $(grep -c . "$sbox/.tmux.conf") lines, expected 3"
+check "keeps your state by default"     "$( [[ -f "$sbox/.local/state/nachimux/prefix-pins" ]] && echo y )"
+HOME="$sbox" "$ROOT/nachimux" uninstall --purge >/dev/null 2>&1
+check "--purge drops saved state"       "$( [[ ! -d "$sbox/.local/state/nachimux" ]] && echo y )"
+rm -rf "$sbox"
+
 printf '\n%s passed, %s failed\n\n' "$(green "$PASS")" "$( ((FAIL)) && red "$FAIL" || echo 0 )"
 (( FAIL == 0 ))

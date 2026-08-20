@@ -18,16 +18,24 @@ nachimux doctor
 nachimux docs
 ```
 
-`setup` enlaza el comando en `~/.local/bin`, agrega este perfil a `~/.tmux.conf` y
-recarga tmux si ya está abierto. No reemplaza archivos o enlaces que no reconoce.
+`setup` enlaza el comando en `~/.local/bin`, agrega este perfil a `~/.tmux.conf`,
+instala [TPM](https://github.com/tmux-plugins/tpm) y sus plugins, y recarga tmux si
+ya está abierto. Termina con la barra funcionando. No reemplaza archivos ni enlaces
+que no reconoce.
 
-Los plugins usan [TPM](https://github.com/tmux-plugins/tpm). Si todavía no lo tienes:
+Si algo del paso de plugins falla, lo dice: abrí tmux y presioná `Ctrl-b`, soltá, y
+después `I`.
+
+Para deshacerlo:
 
 ```sh
-git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+nachimux uninstall           # quita el enlace y el bloque de ~/.tmux.conf
+nachimux uninstall --purge   # además borra pines, listas recientes y el mute
 ```
 
-Después abre tmux y presiona `Ctrl-b`, suelta, y luego `I` para instalar los plugins.
+`uninstall` solo toca lo que `setup` creó: un enlace que apunte a otro lado, o
+configuración escrita a mano, los deja intactos. TPM, los plugins y este repo no se
+tocan.
 
 ## El único concepto importante
 

@@ -317,11 +317,23 @@ setup_nachimux() {
     printf '[ok] Added nachimux to ~/.tmux.conf\n'
   fi
 
+  # Order matters. TPM installs by asking a RUNNING tmux server which plugins the
+  # config asks for, so the clone has to exist before the server loads, and the
+  # server has to be up before anything can be installed.
+  clone_tpm || return 1
+
   if have tmux && tmux list-sessions >/dev/null 2>&1; then
     tmux source-file "$HOME/.tmux.conf"
     printf '[ok] Reloaded the running tmux server; prefix is now C-b\n'
-  else
+    install_plugins_now
+  elif have tmux; then
+    # No server yet: start a throwaway one just long enough to install into.
+    tmux -f "$HOME/.tmux.conf" new-session -d -s nachimux-setup >/dev/null 2>&1 \
+      && { install_plugins_now; tmux kill-session -t nachimux-setup >/dev/null 2>&1; } \
+      || printf '[note] Could not start tmux to install plugins — open tmux and press prefix I\n'
     printf '[ok] Config will load the next time tmux starts\n'
+  else
+    printf '[note] tmux not found — install it, then re-run\n'
   fi
 
   if [[ ":$PATH:" != *":$bin_dir:"* ]]; then
@@ -429,6 +441,102 @@ doctor_keys() {
   return 0
 }
 
+# ── TPM, without the two manual steps the README used to ask for ────────────
+# setup used to stop here and leave you to clone TPM by hand and press prefix I.
+# Until both happened the status bar was broken -- which is the first thing a new
+# machine shows you, so "it works" and "it looks broken" were the same state.
+#
+# Only ever clones into a directory nobody else owns, and treats a missing git or
+# a failed install as something to REPORT, not to hide: a half-installed bar is
+# worse than a clear sentence about what is missing.
+clone_tpm() {
+  local tpm="$HOME/.tmux/plugins/tpm"
+
+  if [[ -d "$tpm/.git" ]]; then
+    printf '[ok] TPM already installed at %s\n' "$tpm"; return 0
+  fi
+  if [[ -e "$tpm" ]]; then
+    printf '[note] %s exists but is not a git clone — leaving it alone\n' "$tpm"; return 0
+  fi
+  have git || { printf '[fail] git not found — needed to install TPM\n' >&2; return 1; }
+  mkdir -p "$HOME/.tmux/plugins"
+  if git clone -q --depth 1 https://github.com/tmux-plugins/tpm "$tpm" 2>/dev/null; then
+    printf '[ok] Cloned TPM into %s\n' "$tpm"
+  else
+    printf '[fail] Could not clone TPM — check your network, then re-run\n' >&2
+    return 1
+  fi
+}
+
+# Runs against a live server, and CHECKS rather than trusting the exit code:
+# TPM's installer exits 0 whether or not it actually fetched anything, and
+# claiming success over an empty plugins directory is how you end up debugging
+# a broken bar on a machine you just set up.
+install_plugins_now() {
+  local tpm="$HOME/.tmux/plugins/tpm" installer="" before after
+  [[ -x "$tpm/bin/install_plugins" ]]      && installer="$tpm/bin/install_plugins"
+  [[ -z "$installer" && -x "$tpm/bindings/install_plugins" ]] && installer="$tpm/bindings/install_plugins"
+  [[ -z "$installer" ]] && { printf '[note] TPM has no install_plugins script — press prefix I in tmux\n'; return 0; }
+
+  before="$(find "$HOME/.tmux/plugins" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | grep -c . || true)"
+  printf '[..] Installing plugins (the first run downloads a few repos)\n'
+  "$installer" >/dev/null 2>&1 || true
+  after="$(find "$HOME/.tmux/plugins" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | grep -c . || true)"
+
+  if [[ "${after:-0}" -gt 1 ]]; then
+    printf '[ok] %s plugins present\n' "$after"
+  else
+    printf '[note] No plugins were installed — open tmux and press prefix I\n'
+  fi
+  return 0
+}
+
+# ── The teardown that never existed ─────────────────────────────────────────
+# Mirrors setup's discipline exactly: it removes ONLY what setup created, and
+# refuses to touch anything it does not recognise. A symlink pointing somewhere
+# else, or a hand-written source line, is someone's deliberate choice.
+#
+# Your pins, MRU lists and mute state survive by default -- uninstalling a
+# command is not the same as saying you are done with it. --purge says that.
+uninstall_nachimux() {
+  local bin="$HOME/.local/bin/nachimux" conf="$HOME/.tmux.conf" purge="${1:-}"
+  local removed=0
+
+  if [[ -L "$bin" && "$(readlink "$bin")" == "$ROOT/nachimux" ]]; then
+    rm -f "$bin" && printf '[ok] Removed the CLI link at %s\n' "$bin"; removed=$((removed + 1))
+  elif [[ -e "$bin" || -L "$bin" ]]; then
+    printf '[note] %s is not our link — leaving it alone\n' "$bin"
+  else
+    printf '[ok] No CLI link to remove\n'
+  fi
+
+  if [[ -f "$conf" ]] && grep -Fq "$CONFIG" "$conf"; then
+    local tmp="$conf.nachimux.$$"
+    # Drop the source line and the managed comment that setup wrote above it.
+    awk -v cfg="$CONFIG" '
+      index($0, cfg) && /source-file/ { skipped = 1; next }
+      /^# nachimux — managed by/ { held = $0; next }
+      { if (held != "") { print held; held = "" } print }
+      END { if (held != "" && !skipped) print held }
+    ' "$conf" > "$tmp" 2>/dev/null && mv "$tmp" "$conf" \
+      && { printf '[ok] Removed the nachimux block from %s\n' "$conf"; removed=$((removed + 1)); } \
+      || { rm -f "$tmp"; printf '[fail] Could not edit %s\n' "$conf" >&2; }
+  else
+    printf '[ok] %s does not source nachimux\n' "$conf"
+  fi
+
+  local state="${XDG_STATE_HOME:-$HOME/.local/state}/nachimux"
+  if [[ "$purge" == "--purge" ]]; then
+    rm -rf "$state" && printf '[ok] Removed saved state at %s\n' "$state"
+  elif [[ -d "$state" ]]; then
+    printf '[note] Kept your pins, recent lists and mute state at %s (--purge removes them)\n' "$state"
+  fi
+
+  printf '\nTPM, its plugins and this repo are left alone — delete them by hand if you want them gone.\n'
+  (( removed > 0 )) && printf 'Open tmux fresh, or run: tmux kill-server\n'
+  return 0
+}
+
 usage() {
   cat <<'EOF'
 nachimux — a fuzzy tmux cheatsheet
@@ -441,7 +549,8 @@ nachimux — a fuzzy tmux cheatsheet
   nachimux docs             open the visual HTML guide
   nachimux doctor           check dependencies, config and live prefix
   nachimux doctor --keys    check the cheatsheet against the live bindings
-  nachimux setup            link the CLI and activate this config
+  nachimux setup            link the CLI, activate this config, install plugins
+  nachimux uninstall        undo setup (--purge also drops saved state)
   nachimux help             show this help
 
 Short flags: -c/--category · -a/--all · -p/--prefix · -h/--help
@@ -462,6 +571,7 @@ case "${1:-}" in
   --docs|docs|guide)        open_docs ;;
   --doctor|doctor)          if [[ "${2:-}" == "--keys" ]]; then doctor_keys; else doctor; fi ;;
   --setup|setup|install)    setup_nachimux ;;
+  --uninstall|uninstall)    uninstall_nachimux "${2:-}" ;;
   "")                      search "" ;;
   -*)                       echo "nachimux: unknown option: $1" >&2; echo "Try: nachimux help" >&2; exit 2 ;;
   *)                        search "$*" ;;
