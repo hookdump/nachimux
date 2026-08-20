@@ -131,6 +131,22 @@ check "every workspace is listed"      "$( [[ "$ws_rows" -ge 1 ]] && echo y )" "
 check "MRU hooks quote their ids"      "$(grep -c "record-mru.sh '#{window_id}' '#{session_id}'" "$CONF" | grep -x 2)" \
                                        "an unquoted session_id records the literal string sh"
 
+# ── tab naming ─────────────────────────────────────────────────────────────
+# Auto-naming is only safe because rename-window pins a window (sets its own
+# automatic-rename off). If that ever stopped being true, every curated tab
+# name in every workspace would start drifting.
+printf '\ntab naming\n'
+check "auto-naming is on"              "$( [[ "$(t show -gv automatic-rename)" == on ]] && echo y )"
+check "a shell shows the directory"    "$(t show -gv automatic-rename-format | grep -o 'b:pane_current_path')"
+check "ssh is not treated as a shell"  "$( t show -gv automatic-rename-format | grep -q '\*sh' && echo '' || echo y )" \
+                                       "a *sh glob would swallow ssh"
+t new-window -d -t s -c /tmp 2>/dev/null; sleep 1.5
+nw="$(t list-windows -t s -F '#{window_id}' | tail -1)"
+t rename-window -t "$nw" 'Pinned By Hand' 2>/dev/null; sleep 0.5
+check "renaming pins the window"       "$( [[ "$(t show -w -t "$nw" -v automatic-rename)" == off ]] && echo y )" \
+                                       "manual names would drift"
+check "the hand-given name stuck"      "$( [[ "$(t display -p -t "$nw" '#{window_name}')" == 'Pinned By Hand' ]] && echo y )"
+
 # ── the palette flips ──────────────────────────────────────────────────────
 printf '\ntheme\n'
 t run-shell "$ROOT/scripts/theme.sh dark" >/dev/null; sleep 0.6
