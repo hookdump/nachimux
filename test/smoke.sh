@@ -97,6 +97,17 @@ check "retired tabs10 table is gone"  "$( [[ "$(t list-keys -T tabs10 2>/dev/nul
 check "destructive keys confirm"      "$(t list-keys -T prefix | grep -E ' (X|x) ' | grep -c confirm-before | grep -x 2)" \
                                       "expected both X and x to use confirm-before"
 
+# ── hooks ──────────────────────────────────────────────────────────────────
+# set-hook -g REPLACES. A second declaration of the same hook name silently
+# deletes the first, with no error and no visible symptom until the thing that
+# stopped running is missed. Chain with ";" instead.
+printf '\nhooks\n'
+dupes="$(grep -E '^set-hook' "$CONF" | grep -oE 'set-hook -a?g [a-z-]+' | awk '{print $3}' | sort | uniq -d)"
+check "no hook is declared twice"     "$( [[ -z "$dupes" ]] && echo y )" "declared more than once: $dupes"
+check "window-unlinked survived"      "$(t show-hooks -g | grep 'window-unlinked' | grep -o 'tab-rows')"
+check "window-unlinked recounts too"  "$(t show-hooks -g | grep 'window-unlinked' | grep -o 'attention-badge')"
+check "bell raises the count"         "$(t show-hooks -g | grep -o 'alert-bell')"
+
 # ── the palette flips ──────────────────────────────────────────────────────
 printf '\ntheme\n'
 t run-shell "$ROOT/scripts/theme.sh dark" >/dev/null; sleep 0.6

@@ -25,4 +25,10 @@ if [ "${attached:-0}" != "0" ] && [ "${wactive:-0}" = "1" ] && [ "${pactive:-0}"
 fi
 
 tmux set-option -w -t "$TMUX_PANE" @attention 1 2>/dev/null
+
+# The bar's count is event-driven, and this is one of the two events that can
+# raise it. We are outside tmux's hook system here -- this runs inside Claude --
+# so nothing recounts for us.
+ROOT="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+"$ROOT/attention-badge.sh" 2>/dev/null &
 exit 0
