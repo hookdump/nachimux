@@ -72,7 +72,7 @@ case "${1:-init}" in
     if is_muted; then rm -f "$MUTE_FILE"; else : > "$MUTE_FILE"; fi
     publish
     # Cue the unmute with the sound itself -- the most direct possible proof.
-    is_muted || { c="$(tmux show -gv @nachimux_cue_action 2>/dev/null)"; [[ -n "$c" && "$c" != ':' ]] && ( sh -c "$c" & ) ; }
+    is_muted || { c="$(tmux show -gqv @nachimux_cue_action 2>/dev/null)"; [[ -n "$c" && "$c" != ':' ]] && ( sh -c "$c" & ) ; }
     if is_muted; then tmux display-message "  cues muted"; else tmux display-message "  cues on"; fi
     tmux refresh-client -S 2>/dev/null || true
     ;;

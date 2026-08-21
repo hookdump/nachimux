@@ -2,8 +2,8 @@
 .DS_Store
 **/.DS_Store
 
-# scratch / test artifacts
+# Local scratch. NOT test/ — that one is tracked and is the smoke suite.
 testing/
 
-# stray duplicate asset
+# A Finder-made duplicate of a sound that sits next to the real one.
 sounds/Copia de *

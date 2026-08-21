@@ -41,7 +41,7 @@ raise() {
   local pane="$1" win list
   [[ -n "$pane" ]] || { count; return 0; }
   win="$(win_of "$pane")"; [[ -n "$win" ]] || { count; return 0; }
-  list="$(tmux show -w -t "$win" -v @attention_panes 2>/dev/null)"
+  list="$(tmux show -w -t "$win" -qv @attention_panes 2>/dev/null)"
   case " $list " in *" $pane "*) : ;; *) list="${list:+$list }$pane" ;; esac
   tmux set -w -t "$win" @attention 1                 2>/dev/null || true
   tmux set -w -t "$win" @attention_panes "$list"     2>/dev/null || true
@@ -52,7 +52,7 @@ clear_one() {
   local pane="$1" win list out p
   [[ -n "$pane" ]] || { count; return 0; }
   win="$(win_of "$pane")"; [[ -n "$win" ]] || { count; return 0; }
-  list="$(tmux show -w -t "$win" -v @attention_panes 2>/dev/null)"
+  list="$(tmux show -w -t "$win" -qv @attention_panes 2>/dev/null)"
   out=""
   for p in $list; do [[ "$p" == "$pane" ]] || out="${out:+$out }$p"; done
   if [[ -z "$out" ]]; then

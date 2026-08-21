@@ -23,7 +23,10 @@
 # ============================================================================
 set -uo pipefail
 
-DIR="$(tmux show -gv @resurrect-dir 2>/dev/null)"
+# -gqv, not -gv: reading an option that was never set is an ERROR in tmux, and
+# it lands in show-messages even when the shell redirect hides it. Both of
+# these are usually unset, so -gv meant two logged errors on every load.
+DIR="$(tmux show -gqv @resurrect-dir 2>/dev/null)"
 [[ -z "$DIR" ]] && DIR="$HOME/.local/share/tmux/resurrect"
 MAX_AGE_HOURS=48
 
@@ -37,7 +40,7 @@ case "${1:-check}" in
     tmux set -g @nachimux_restore_dismissed 1 2>/dev/null || true
     publish "" ;;
   check)
-    [[ "$(tmux show -gv @nachimux_restore_dismissed 2>/dev/null)" == 1 ]] && exit 0
+    [[ "$(tmux show -gqv @nachimux_restore_dismissed 2>/dev/null)" == 1 ]] && exit 0
     newest="$(ls -t "$DIR"/tmux_resurrect_*.txt 2>/dev/null | head -1)"
     [[ -n "$newest" && -s "$newest" ]] || { publish ""; exit 0; }
 
