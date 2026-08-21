@@ -34,7 +34,7 @@ Splits	prefix	H J K L	Resize the split (hold Shift; repeatable)
 Splits	prefix	z	Zoom or unzoom this split	resize-pane -Z	
 Splits	prefix	Space	Cycle through preset layouts	next-layout	
 Splits	prefix	e	Even out all splits	select-layout tiled	
-Splits	prefix	!	Pop this split into its own tab	break-pane	
+Splits	prefix	!	Pop this split into its own tab	break-pane -n "split" ; setw automatic-rename on	
 Splits	prefix	x	Close the current split	kill-pane	Close this split?
 Splits	prefix	o	Cycle to the next split	select-pane -t :.+	
 Splits	palette	—	Layout: even horizontal	select-layout even-horizontal	
