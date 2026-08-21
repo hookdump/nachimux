@@ -1,101 +1,114 @@
 # nachimux
 
-Una configuración de tmux pensada para sentirse como un navegador: proyectos como
-**workspaces**, ventanas como **tabs** y paneles como **splits**. Usa el prefix estándar
-de tmux: **`Ctrl-b`**.
+A tmux config built to feel like a browser: projects are **workspaces**, windows are
+**tabs**, panes are **splits**. It uses the standard tmux prefix: **`Ctrl-b`**.
 
-La guía visual completa está en [tmux-guide.html](./tmux-guide.html).
+Built for a Spanish keyboard — no binding needs AltGr, which on that layout is where
+`[ ] { } | \ ~` live — but nothing about it is Spanish-only, and it works the same on
+any other layout.
 
-## Empezar
+The full visual guide is in [tmux-guide.html](./tmux-guide.html).
+
+## Getting started
 
 ```sh
-# Dependencias principales (macOS)
+# Main dependencies (macOS)
 brew install tmux gum fzf zoxide
 
-# Desde este directorio
+# From this directory
 ./nachimux setup
 nachimux doctor
 nachimux docs
 ```
 
-`setup` enlaza el comando en `~/.local/bin`, agrega este perfil a `~/.tmux.conf`,
-instala [TPM](https://github.com/tmux-plugins/tpm) y sus plugins, y recarga tmux si
-ya está abierto. Termina con la barra funcionando. No reemplaza archivos ni enlaces
-que no reconoce.
+`setup` links the command into `~/.local/bin`, adds this profile to `~/.tmux.conf`,
+installs [TPM](https://github.com/tmux-plugins/tpm) and its plugins, and reloads tmux
+if it is already running. It finishes with a working status bar. It never replaces a
+file or a link it does not recognise.
 
-Si algo del paso de plugins falla, lo dice: abrí tmux y presioná `Ctrl-b`, soltá, y
-después `I`.
+If the plugin step does not finish, it says so: open tmux, press `Ctrl-b`, let go,
+then press `I`.
 
-Para deshacerlo:
+To undo it:
 
 ```sh
-nachimux uninstall           # quita el enlace y el bloque de ~/.tmux.conf
-nachimux uninstall --purge   # además borra pines, listas recientes y el mute
+nachimux uninstall           # removes the link and the block in ~/.tmux.conf
+nachimux uninstall --purge   # also drops pins, recent lists and the mute state
 ```
 
-`uninstall` solo toca lo que `setup` creó: un enlace que apunte a otro lado, o
-configuración escrita a mano, los deja intactos. TPM, los plugins y este repo no se
-tocan.
+`uninstall` only touches what `setup` created. A link pointing somewhere else, or
+config you wrote by hand, is left alone — as are TPM, the plugins and this repo.
 
-## El único concepto importante
+## The one concept that matters
 
-Los atajos se escriben como `prefix p`. Eso significa:
+Shortcuts are written as `prefix p`. That means:
 
-1. Presiona `Ctrl-b`.
-2. Suelta ambas teclas.
-3. Presiona `p`.
+1. Press `Ctrl-b`.
+2. Let go of both keys.
+3. Press `p`.
 
-`prefix p` abre una paleta buscable que **ejecuta** acciones. `prefix /` abre
-`nachimux` en otro popup para **consultar y aprender** los atajos. Ambos leen el mismo
-registro, por lo que las teclas y descripciones no pueden divergir.
+`prefix p` opens a searchable palette that **runs** actions. `prefix /` opens
+`nachimux` in another popup to **look things up and learn** them. Both read the same
+registry, so the keys and their descriptions cannot drift apart.
 
-## Comando `nachimux`
+## The `nachimux` command
 
 ```text
-nachimux                  busca cualquier atajo
-nachimux split            abre la búsqueda filtrada por "split"
-nachimux category         navega por categoría
-nachimux all              imprime todos los atajos
-nachimux prefix           explica cómo usar Ctrl-b
-nachimux docs             abre la guía visual
-nachimux doctor           revisa instalación, dependencias y prefix activo
-nachimux setup            instala el enlace y activa el perfil
-nachimux help             muestra la ayuda
+nachimux                  search every shortcut
+nachimux split            open the search pre-filtered by "split"
+nachimux category         browse by category
+nachimux all              print the whole cheatsheet
+nachimux prefix           explain how to use Ctrl-b
+nachimux docs             open the visual guide
+nachimux doctor           check the install, dependencies and live prefix
+nachimux doctor --keys    check the cheatsheet against the real bindings
+nachimux setup            install the link, activate the profile, install plugins
+nachimux uninstall        undo setup (--purge also drops saved state)
+nachimux help             show the help
 ```
 
-También funcionan las opciones cortas existentes: `-c`, `-a`, `-p` y `-h`.
+The existing short options still work: `-c`, `-a`, `-p` and `-h`.
 
-## Atajos para sobrevivir el primer día
+## Enough shortcuts to survive the first day
 
-| Acción | Teclas |
+| Action | Keys |
 | --- | --- |
-| Abrir la paleta | `prefix p` |
-| Consultar todos los atajos | `prefix /` |
-| Cambiar o crear workspace | `prefix w` |
-| Nueva tab | `prefix t` |
-| Split lado a lado | `prefix =` |
-| Split arriba/abajo | `prefix -` |
-| Moverse entre splits | `prefix h/j/k/l` |
-| Zoom de un split | `prefix z` |
-| Recargar la configuración | `prefix r` |
-| Salir sin cerrar nada | `prefix d` |
+| Open the palette | `prefix p` |
+| Look up every shortcut | `prefix /` |
+| Find any tab, anywhere | `prefix g` |
+| Switch or create a workspace | `prefix w` |
+| Recent workspaces | `prefix W` |
+| New tab | `prefix t` |
+| Split side by side | `prefix =` |
+| Split top and bottom | `prefix -` |
+| Move between splits | `prefix h/j/k/l` |
+| Zoom a split | `prefix z` |
+| Reload the config | `prefix r` |
+| Leave without closing anything | `prefix d` |
 
-## Archivos
+`prefix g` is the finder. It opens on every tab in every workspace, and `ctrl-a` /
+`ctrl-r` / `ctrl-n` / `ctrl-w` switch it between all tabs, recent tabs, tabs asking
+for your attention, and workspaces — after it is open, so a wrong guess costs a
+keystroke instead of a reopen. `prefix f`, `prefix B` and `prefix n` are the same
+finder opened on a different filter.
 
-- `tmux.spanish.conf`: configuración principal.
-- `data/cheatsheet.tsv`: registro único de atajos, acciones y confirmaciones.
-- `scripts/`: paleta, sonidos y la barra de estado.
-- `test/smoke.sh`: arranca la config en un socket descartable con un cliente
-  real y verifica que la barra realmente dibuje algo. tmux no falla en voz
-  alta: un formato roto se dibuja como nada.
-- `tmux-guide.html`: documentación visual autocontenida.
+## Files
 
-El perfil resuelve los scripts desde la ubicación real del repo, por lo que no depende
-de que esté clonado en un directorio específico.
+- `nachimux.conf`: the main config.
+- `data/cheatsheet.tsv`: the single registry of shortcuts, actions and confirmations.
+- `scripts/`: the palette, the finder, the sounds and the status bar.
+- `test/smoke.sh`: boots the config on a throwaway socket with a real attached client
+  and checks the bar actually draws something. tmux does not fail loudly — a broken
+  format renders as nothing at all.
+- `tmux-guide.html`: self-contained visual documentation.
 
-Las columnas del registro son `category`, `mode`, `keys`, `description`, `command` y
-`confirm`. Si una fila tiene `command`, aparece también en la paleta ejecutable. Si
-además tiene `confirm`, tmux pide confirmación antes de ejecutar una acción destructiva.
+The profile resolves its scripts from wherever the repo actually lives, so it does not
+care which directory you cloned it into.
 
-El perfil, el CLI y toda la documentación usan el estándar `C-b`, para que nunca haya
-dos fuentes de verdad distintas.
+The registry's columns are `category`, `mode`, `keys`, `description`, `command` and
+`confirm`. A row with a `command` also shows up in the runnable palette. If it also
+has a `confirm`, tmux asks before running a destructive action — and
+`nachimux doctor --keys` fails if a row promises a prompt the binding does not honour.
+
+The profile, the CLI and all the documentation use the standard `C-b`, so there are
+never two different sources of truth.

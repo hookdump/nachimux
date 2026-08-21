@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Guía visual de nachimux: instala, aprende y usa tmux con workspaces, tabs y splits.">
+<meta name="description" content="The visual guide to nachimux: install it, learn it, and use tmux as workspaces, tabs and splits.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><rect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%238839ef%22/><path d=%22M20 16l18 16-18 16%22 fill=%22none%22 stroke=%22white%22 stroke-width=%228%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/></svg>">
-<title>nachimux — tmux, explicado fácil</title>
+<title>nachimux — tmux, made obvious</title>
 <style>
   /* ── Catppuccin: Mocha (dark) / Latte (light) as design tokens ───────── */
   :root {
@@ -210,7 +210,7 @@
   .checklist li::before { content:'✓'; color:var(--green); font-family:var(--font-mono); font-weight:800; margin-right:9px; }
   @media (max-width:720px){ .install-grid { grid-template-columns:1fr; } }
 
-  /* ── workspace sidebar figure ────────────────────────────────────────── */
+  /* ── finder figure ────────────────────────────────────────── */
   .sb-wrap { display:grid; grid-template-columns: 220px 1fr; gap:26px; align-items:center; margin-top:22px; }
   .sb-term { display:flex; background:var(--crust); border:1px solid var(--surface1); border-radius:12px; overflow:hidden; box-shadow:var(--shadow); font-family:var(--font-mono); font-size:.78rem; min-height:210px; }
   .sb-col { width:118px; flex:none; background:var(--mantle); border-right:1px solid var(--surface0); padding:10px 0; }
@@ -314,16 +314,16 @@
 </style>
 </head>
 <body>
-<a class="skip" href="#content">Saltar al contenido</a>
+<a class="skip" href="#content">Skip to content</a>
 <div class="nav-shell">
-  <nav class="nav" aria-label="Navegación principal">
+  <nav class="nav" aria-label="Main navigation">
     <a class="brand" href="#top">nachimux</a>
     <div class="nav-links">
-      <a href="#install">Instalar</a>
-      <a href="#keys">Atajos</a>
+      <a href="#install">Install</a>
+      <a href="#keys">Shortcuts</a>
       <a href="#cli">CLI</a>
     </div>
-    <button class="theme-toggle" type="button" aria-label="Cambiar tema" title="Cambiar tema">◐</button>
+    <button class="theme-toggle" type="button" aria-label="Switch theme" title="Switch theme">◐</button>
   </nav>
 </div>
 
@@ -332,10 +332,11 @@
   <!-- ─────────────────────────── HERO ─────────────────────────── -->
   <header class="hero" id="top">
     <div class="eyebrow">nachimux · tmux 3.7 · catppuccin mocha · prefix C-b</div>
-    <h1>Tu tmux, fácil de usar.<span class="cur"></span></h1>
-    <p class="lead">Una configuración amigable para teclado español. La barra vive arriba y
-    todo se organiza en tres niveles que ya conoces de cualquier navegador:
-    <b>workspaces</b>, <b>tabs</b> y <b>splits</b>.</p>
+    <h1>Your tmux, made obvious.<span class="cur"></span></h1>
+    <p class="lead">A config built for Spanish keyboards — nothing needs AltGr — though it
+    works the same on any layout. The bar lives on top, and everything is organised in
+    three levels you already know from any browser:
+    <b>workspaces</b>, <b>tabs</b> and <b>splits</b>.</p>
 
     <div class="bar-frame" role="img" aria-label="Mock of the tmux top bar: a green workspace pill on the left, three centered tabs with the second active, and CPU, battery and clock on the right.">
       <div class="bar">
@@ -353,67 +354,71 @@
       </div>
     </div>
     <p class="bar-caption">
-      <b>izquierda</b> = workspace &nbsp;·&nbsp; <b>centro</b> = tabs &nbsp;·&nbsp; <b>derecha</b> = cpu / batería / hora
+      <b>left</b> = workspace &nbsp;·&nbsp; <b>centre</b> = tabs &nbsp;·&nbsp; <b>right</b> = cpu / battery / clock
     </p>
   </header>
 
   <!-- ─────────────────────── THE ONE KEY ──────────────────────── -->
   <section id="prefix">
-    <div class="eyebrow">la única tecla que debes recordar</div>
-    <h2><span class="sec-no">00</span> El prefix</h2>
-    <p>Casi todos los atajos empiezan con el <b>prefix</b>: lo presionas, lo sueltas y recién
-    entonces presionas la tecla siguiente. nachimux usa el estándar de tmux:
+    <div class="eyebrow">the only key you have to remember</div>
+    <h2><span class="sec-no">00</span> The prefix</h2>
+    <p>Nearly every shortcut starts with the <b>prefix</b>: you press it, let go, and only
+    then press the next key. nachimux uses the tmux standard:
     <span class="combo"><kbd class="k pfx">Ctrl</kbd><span class="plus">+</span><kbd class="k pfx">b</kbd></span>.</p>
-    <p style="color:var(--subtext); font-size:.94rem">Cuando esta guía dice
+    <p style="color:var(--subtext); font-size:.94rem">When this guide says
       <span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">w</kbd></span>
-      significa: presiona <span class="mono">Ctrl+b</span>, suelta ambas teclas y luego presiona <span class="mono">w</span>. No hay que mantener todo apretado a la vez.</p>
+      it means: press <span class="mono">Ctrl+b</span>, let go of both keys, then press <span class="mono">w</span>. You never hold them all down at once.</p>
   </section>
 
   <!-- ─────────────────────── INSTALL ─────────────────────────── -->
   <section id="install">
-    <div class="eyebrow">de cero a listo</div>
-    <h2><span class="sec-no">01</span> Instalación rápida</h2>
-    <p>El instalador activa este perfil sin pisar archivos ajenos. Después, el doctor te dice
-    exactamente qué falta.</p>
+    <div class="eyebrow">from nothing to working</div>
+    <h2><span class="sec-no">01</span> Quick install</h2>
+    <p>The installer activates this profile without stepping on anyone else's files. The
+    doctor then tells you exactly what is missing.</p>
     <div class="install-grid">
       <div class="install-card">
-        <h3>1. Dependencias</h3>
-        <p>En macOS, instala tmux y las pequeñas herramientas de la interfaz.</p>
-        <div class="cmd"><code>brew install tmux gum fzf zoxide</code><button class="copy" data-copy="brew install tmux gum fzf zoxide">copiar</button></div>
-        <h3 style="margin-top:20px">2. Activar nachimux</h3>
-        <div class="cmd"><code>./nachimux setup</code><button class="copy" data-copy="./nachimux setup">copiar</button></div>
-        <div class="cmd"><code>nachimux doctor</code><button class="copy" data-copy="nachimux doctor">copiar</button></div>
+        <h3>1. Dependencies</h3>
+        <p>On macOS, install tmux and the small tools the interface leans on.</p>
+        <div class="cmd"><code>brew install tmux gum fzf zoxide</code><button class="copy" data-copy="brew install tmux gum fzf zoxide">copy</button></div>
+        <h3 style="margin-top:20px">2. Turn nachimux on</h3>
+        <div class="cmd"><code>./nachimux setup</code><button class="copy" data-copy="./nachimux setup">copy</button></div>
+        <div class="cmd"><code>nachimux doctor</code><button class="copy" data-copy="nachimux doctor">copy</button></div>
       </div>
       <div class="install-card">
-        <h3>¿Qué hace setup?</h3>
+        <h3>What does setup do?</h3>
         <ul class="checklist">
-          <li>Enlaza el comando en <code>~/.local/bin</code>.</li>
-          <li>Activa el perfil desde <code>~/.tmux.conf</code>.</li>
-          <li>Recarga tmux si ya está abierto.</li>
-          <li>No reemplaza archivos que no reconoce.</li>
+          <li>Links the command into <code>~/.local/bin</code>.</li>
+          <li>Activates the profile from <code>~/.tmux.conf</code>.</li>
+          <li>Installs TPM and its plugins.</li>
+          <li>Reloads tmux if it is already running.</li>
+          <li>Never replaces a file it does not recognise.</li>
         </ul>
-        <p style="margin-top:16px">Los plugins se instalan una sola vez con TPM. Dentro de tmux:
-        <span class="combo"><kbd class="k pfx">Ctrl</kbd><span class="plus">+</span><kbd class="k pfx">b</kbd></span>, suelta, y luego <kbd class="k">I</kbd>.</p>
+        <p style="margin-top:16px">Setup installs the plugins for you. If that step cannot
+        finish it says so — then, inside tmux:
+        <span class="combo"><kbd class="k pfx">Ctrl</kbd><span class="plus">+</span><kbd class="k pfx">b</kbd></span>, let go, then <kbd class="k">I</kbd>.</p>
+        <p style="margin-top:12px"><code>nachimux uninstall</code> undoes all of it, and only
+        touches what setup created.</p>
       </div>
     </div>
   </section>
 
   <!-- ─────────────────────── COMMAND PALETTE ──────────────────── -->
   <section id="palette">
-    <div class="eyebrow">el atajo para todos los atajos</div>
-    <h2><span class="sec-no">★</span> La paleta de comandos</h2>
-    <p>¿No recuerdas una tecla? No pasa nada. Presiona <span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">p</kbd></span>
-    y aparece un buscador. Escribe lo que quieres — <span class="mono">split</span>,
-    <span class="mono">new tab</span>, <span class="mono">zoom</span>, <span class="mono">rename</span> — y Enter lo ejecuta.</p>
+    <div class="eyebrow">the shortcut for every shortcut</div>
+    <h2><span class="sec-no">★</span> The command palette</h2>
+    <p>Can't remember a key? It doesn't matter. Press <span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">p</kbd></span>
+    and a search box appears. Type what you want — <span class="mono">split</span>,
+    <span class="mono">new tab</span>, <span class="mono">zoom</span>, <span class="mono">rename</span> — and Enter runs it.</p>
 
     <div class="feature">
       <div>
         <span class="tag">prefix p</span>
-        <h3>Búscalo y ejecútalo</h3>
-        <p>Aquí viven las acciones comunes, agrupadas por categoría. Cada fila muestra su
-        atajo y Enter la ejecuta. Cerrar una tab o un split siempre pide confirmación.</p>
-        <p style="margin:0">La paleta y <code>nachimux</code> leen el mismo registro. Para consultar
-        sin ejecutar, usa <span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">/</kbd></span>.</p>
+        <h3>Search it, then run it</h3>
+        <p>The common actions live here, grouped by category. Every row shows its shortcut
+        and Enter runs it. Closing a tab or a split always asks first.</p>
+        <p style="margin:0">The palette and <code>nachimux</code> read the same registry. To look
+        something up without running it, use <span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">/</kbd></span>.</p>
       </div>
       <div class="pal-frame" role="img" aria-label="Mock of the command palette popup: a search prompt reading 'do › spl' with a filtered list. Each row shows its keybinding on the left, e.g. 'prefix =' next to 'Split → side by side', which is highlighted.">
         <div class="pal-head"> nachimux · palette </div>
@@ -430,55 +435,61 @@
 
   <!-- ─────────────────────── THREE LEVELS ─────────────────────── -->
   <section id="model">
-    <div class="eyebrow">el modelo mental</div>
-    <h2><span class="sec-no">02</span> Tres niveles</h2>
-    <p>tmux contiene tres tipos de objetos. nachimux los presenta como conceptos familiares para
-    que siempre sepas en qué nivel estás trabajando.</p>
+    <div class="eyebrow">the mental model</div>
+    <h2><span class="sec-no">02</span> Three levels</h2>
+    <p>tmux has three kinds of object. nachimux presents them as things you already know, so
+    you always know which level you are working at.</p>
 
     <div class="tiers">
       <div class="tier t-ws">
         <div class="role">● Workspace</div>
-        <h3>Un contexto completo</h3>
-        <p class="is">tmux lo llama <i>session</i>. Idealmente uno por proyecto. Aparece a la izquierda.</p>
+        <h3>A whole context</h3>
+        <p class="is">tmux calls it a <i>session</i>. Ideally one per project. It shows on the left.</p>
         <ul>
           <li><span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">w</kbd></span></li>
-          <li><span class="d">Buscar / crear / renombrar / eliminar</span></li>
+          <li><span class="d">Find / create / rename / close</span></li>
         </ul>
       </div>
       <div class="tier t-tab">
         <div class="role">● Tab</div>
-        <h3>Una pantalla del workspace</h3>
-        <p class="is">tmux lo llama <i>window</i>. Son las pestañas centradas en la barra superior.</p>
+        <h3>One screen of the workspace</h3>
+        <p class="is">tmux calls it a <i>window</i>. These are the tabs centred on the top bar.</p>
         <ul>
           <li><span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">t</kbd></span></li>
-          <li><span class="d">Nueva tab; <kbd class="k">Tab</kbd> para avanzar</span></li>
+          <li><span class="d">New tab; <kbd class="k">Tab</kbd> moves along</span></li>
         </ul>
       </div>
       <div class="tier t-split">
         <div class="role">● Split</div>
-        <h3>Un panel dentro de una tab</h3>
-        <p class="is">tmux lo llama <i>pane</i>. Permite tener dos shells lado a lado.</p>
+        <h3>A pane inside a tab</h3>
+        <p class="is">tmux calls it a <i>pane</i>. It lets you put two shells side by side.</p>
         <ul>
           <li><span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">=</kbd></span> <span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">-</kbd></span></li>
-          <li><span class="d">Lado a lado / arriba y abajo</span></li>
+          <li><span class="d">Side by side / top and bottom</span></li>
         </ul>
       </div>
     </div>
   </section>
 
-  <!-- ─────────────────────── SIDEBAR ──────────────────────────── -->
-  <section id="sidebar">
-    <div class="eyebrow">todo a la vista</div>
-    <h2><span class="sec-no">★</span> El sidebar de workspaces</h2>
-    <p>Presiona <span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">b</kbd></span>
-    para mostrar una columna con todos los workspaces. El actual se expande y muestra sus tabs.
-    <b>Puedes hacer click en cualquier fila para saltar allí</b>. Vuelve a presionar
-    <kbd class="k">prefix</kbd> <kbd class="k">b</kbd> para ocultarlo.</p>
+  <!-- ─────────────────────── THE FINDER ───────────────────────── -->
+  <section id="finder">
+    <div class="eyebrow">one door, four rooms</div>
+    <h2><span class="sec-no">★</span> Finding anything</h2>
+    <p>Press <span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">g</kbd></span>
+    and you get every tab in every workspace, searchable. There used to be four separate
+    keys for this, and you had to pick the right one <i>before</i> you could see anything —
+    which is exactly the knowledge you opened a finder to get.</p>
+    <p>Now the mode switches from inside, so a wrong guess costs a keystroke instead of a
+    reopen:
+    <kbd class="k">ctrl</kbd>+<kbd class="k">a</kbd> all tabs ·
+    <kbd class="k">ctrl</kbd>+<kbd class="k">r</kbd> recent ·
+    <kbd class="k">ctrl</kbd>+<kbd class="k">n</kbd> asking for you ·
+    <kbd class="k">ctrl</kbd>+<kbd class="k">w</kbd> workspaces.</p>
 
     <div class="sb-wrap">
-      <div class="sb-term" role="img" aria-label="Mock of the workspace sidebar: a left column titled WORKSPACES listing dev (current, expanded into tabs 1 editor, 2 server active, 3 logs), then api and notes; the main area on the right shows a shell.">
+      <div class="sb-term" role="img" aria-label="Mock of the finder popup: a search prompt reading 'all tabs', with workspace dev expanded into its tabs, the current one marked, and a tab flagged as needing attention.">
         <div class="sb-col">
-          <div class="sb-title">◆ WORKSPACES</div>
+          <div class="sb-title">⌕ all tabs ›</div>
           <div class="sb-ws cur">▸ dev</div>
           <div class="sb-tab"><span class="n">1</span> editor</div>
           <div class="sb-tab act"><span class="n">2</span> server</div>
@@ -486,170 +497,184 @@
           <div class="sb-ws">api <span style="color:var(--overlay)">(1)</span></div>
           <div class="sb-ws">notes <span style="color:var(--overlay)">(2)</span></div>
         </div>
-        <div class="sb-main"><span class="pr">~/dev/app ❯</span> nvim src/app.ts</div>
+        <div class="sb-main"><span class="pr">ctrl-a</span> all &nbsp; <span class="pr">ctrl-r</span> recent &nbsp; <span class="pr">ctrl-n</span> needs you &nbsp; <span class="pr">ctrl-w</span> workspaces</div>
       </div>
       <div>
-        <h3 style="font-family:var(--font-mono); font-size:1rem; margin:0 0 8px">Un mapa vivo de tu trabajo</h3>
-        <p style="font-size:.92rem; color:var(--subtext); margin:0 0 10px">Se actualiza solo, marca dónde estás y acepta clicks.
-        Si prefieres el teclado, el buscador
-        (<span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">w</kbd></span>) siempre está disponible.</p>
-        <p style="font-size:.86rem; color:var(--overlay); margin:0">Ocupa unas 22 columnas y se abre automáticamente en cada workspace nuevo.</p>
+        <h3 style="font-family:var(--font-mono); font-size:1rem; margin:0 0 8px">The old keys still work</h3>
+        <p style="font-size:.92rem; color:var(--subtext); margin:0 0 10px">
+        <span class="mono">prefix f</span>, <span class="mono">prefix B</span> and
+        <span class="mono">prefix n</span> open the same finder on a different filter, and
+        <span class="mono">prefix W</span> opens it on workspaces by recency. Muscle memory
+        survives; you just get one surface instead of four.</p>
+        <p style="font-size:.86rem; color:var(--overlay); margin:0">A tab that wants you —
+        a finished Claude turn, or a bell — turns yellow in the bar and shows up under
+        <span class="mono">ctrl-n</span>, pointing at the exact split that called.</p>
       </div>
     </div>
   </section>
 
   <!-- ─────────────────────── KEYMAPS ──────────────────────────── -->
   <section id="keys">
-    <div class="eyebrow">todo, ordenado por nivel</div>
-    <h2><span class="sec-no">03</span> Mapa de atajos</h2>
-    <p>Todos los atajos siguientes empiezan con <span class="combo"><kbd class="k pfx">prefix</kbd></span>
-      (<span class="mono">Ctrl+b</span>) salvo que se indique lo contrario.</p>
+    <div class="eyebrow">everything, ordered by level</div>
+    <h2><span class="sec-no">03</span> The shortcut map</h2>
+    <p>Every shortcut below starts with <span class="combo"><kbd class="k pfx">prefix</kbd></span>
+      (<span class="mono">Ctrl+b</span>) unless stated otherwise.</p>
 
     <div class="maps">
 
       <!-- Workspaces -->
       <div class="map m-ws">
         <h3><span class="dot"></span> Workspaces</h3>
-        <div class="row"><span class="combo"><kbd class="k">w</kbd></span><span class="desc">Buscar / crear / renombrar / cerrar</span></div>
-        <div class="row"><span class="combo"><kbd class="k">)</kbd></span><span class="desc">Workspace siguiente</span></div>
-        <div class="row"><span class="combo"><kbd class="k">(</kbd></span><span class="desc">Workspace anterior</span></div>
-        <div class="row"><span class="combo"><kbd class="k">$</kbd></span><span class="desc">Renombrar el workspace actual</span></div>
-        <div class="row"><span class="combo"><kbd class="k">b</kbd></span><span class="desc">Mostrar / ocultar el sidebar</span></div>
-        <div class="row"><span class="combo"><kbd class="k">d</kbd></span><span class="desc">Salir y dejar todo ejecutándose</span></div>
+        <div class="row"><span class="combo"><kbd class="k">w</kbd></span><span class="desc">Switch / create / rename / close</span></div>
+        <div class="row"><span class="combo"><kbd class="k">W</kbd></span><span class="desc">Recent workspaces, by where you have been</span></div>
+        <div class="row"><span class="combo"><kbd class="k">N</kbd></span><span class="desc">New workspace</span></div>
+        <div class="row"><span class="combo"><kbd class="k">)</kbd></span><span class="desc">Next workspace</span></div>
+        <div class="row"><span class="combo"><kbd class="k">(</kbd></span><span class="desc">Previous workspace</span></div>
+        <div class="row"><span class="combo"><kbd class="k">$</kbd></span><span class="desc">Rename this workspace</span></div>
+        <div class="row"><span class="combo"><kbd class="k">d</kbd></span><span class="desc">Leave, and let everything keep running</span></div>
       </div>
 
       <!-- Tabs -->
       <div class="map m-tab">
         <h3><span class="dot"></span> Tabs</h3>
-        <div class="row"><span class="combo"><kbd class="k">t</kbd></span><span class="desc">Nueva tab (en la carpeta actual)</span></div>
-        <div class="row"><span class="combo"><kbd class="k">Tab</kbd></span><span class="desc">Tab siguiente</span></div>
-        <div class="row"><span class="combo"><kbd class="k">⇧</kbd><span class="plus">+</span><kbd class="k">Tab</kbd></span><span class="desc">Tab anterior</span></div>
-        <div class="row"><span class="combo"><kbd class="k">1</kbd>…<kbd class="k">9</kbd></span><span class="desc">Saltar a una tab por número</span></div>
-        <div class="row"><span class="combo"><kbd class="k">,</kbd></span><span class="desc">Renombrar tab</span></div>
-        <div class="row"><span class="combo"><kbd class="k">&lt;</kbd> <kbd class="k">&gt;</kbd></span><span class="desc">Mover tab a izquierda / derecha</span></div>
-        <div class="row"><span class="combo"><kbd class="k">X</kbd></span><span class="desc">Cerrar tab</span></div>
+        <div class="row"><span class="combo"><kbd class="k">t</kbd></span><span class="desc">New tab (in the current directory)</span></div>
+        <div class="row"><span class="combo"><kbd class="k">g</kbd></span><span class="desc">Find any tab, in any workspace</span></div>
+        <div class="row"><span class="combo"><kbd class="k">b</kbd></span><span class="desc">Last tab (or last workspace, if you just arrived)</span></div>
+        <div class="row"><span class="combo"><kbd class="k">Tab</kbd></span><span class="desc">Next tab</span></div>
+        <div class="row"><span class="combo"><kbd class="k">⇧</kbd><span class="plus">+</span><kbd class="k">Tab</kbd></span><span class="desc">Previous tab</span></div>
+        <div class="row"><span class="combo"><kbd class="k">1</kbd>…<kbd class="k">9</kbd></span><span class="desc">Jump to a tab by number &nbsp;<span style="color:var(--overlay)">(past 9: the digit asks — Enter, or a second digit)</span></span></div>
+        <div class="row"><span class="combo"><kbd class="k">,</kbd></span><span class="desc">Rename tab &nbsp;<span style="color:var(--overlay)">(names itself until you do)</span></span></div>
+        <div class="row"><span class="combo"><kbd class="k">&lt;</kbd> <kbd class="k">&gt;</kbd></span><span class="desc">Move tab left / right</span></div>
+        <div class="row"><span class="combo"><kbd class="k">X</kbd></span><span class="desc">Close tab &nbsp;<span style="color:var(--overlay)">(asks first)</span></span></div>
       </div>
 
       <!-- Splits -->
       <div class="map m-split">
         <h3><span class="dot"></span> Splits</h3>
-        <div class="row"><span class="combo"><kbd class="k">=</kbd></span><span class="desc">Split lado a lado</span></div>
-        <div class="row"><span class="combo"><kbd class="k">-</kbd></span><span class="desc">Split arriba / abajo</span></div>
-        <div class="row"><span class="combo"><kbd class="k">h</kbd><kbd class="k">j</kbd><kbd class="k">k</kbd><kbd class="k">l</kbd></span><span class="desc">Moverse entre splits (también flechas)</span></div>
-        <div class="row"><span class="combo"><kbd class="k">H</kbd><kbd class="k">J</kbd><kbd class="k">K</kbd><kbd class="k">L</kbd></span><span class="desc">Redimensionar el split</span></div>
-        <div class="row"><span class="combo"><kbd class="k">z</kbd></span><span class="desc">Zoom / pantalla completa</span></div>
-        <div class="row"><span class="combo"><kbd class="k">Space</kbd></span><span class="desc">Cambiar layout &nbsp;·&nbsp; <kbd class="k">e</kbd> equilibrarlos</span></div>
-        <div class="row"><span class="combo"><kbd class="k">!</kbd></span><span class="desc">Convertir split en su propia tab</span></div>
-        <div class="row"><span class="combo"><kbd class="k">x</kbd></span><span class="desc">Cerrar este split</span></div>
+        <div class="row"><span class="combo"><kbd class="k">=</kbd></span><span class="desc">Split side by side</span></div>
+        <div class="row"><span class="combo"><kbd class="k">-</kbd></span><span class="desc">Split top / bottom</span></div>
+        <div class="row"><span class="combo"><kbd class="k">h</kbd><kbd class="k">j</kbd><kbd class="k">k</kbd><kbd class="k">l</kbd></span><span class="desc">Move between splits (arrows work too)</span></div>
+        <div class="row"><span class="combo"><kbd class="k">H</kbd><kbd class="k">J</kbd><kbd class="k">K</kbd><kbd class="k">L</kbd></span><span class="desc">Resize the split</span></div>
+        <div class="row"><span class="combo"><kbd class="k">z</kbd></span><span class="desc">Zoom / full screen &nbsp;<span style="color:var(--overlay)">(the tab shows a Z)</span></span></div>
+        <div class="row"><span class="combo"><kbd class="k">Space</kbd></span><span class="desc">Cycle layouts &nbsp;·&nbsp; <kbd class="k">e</kbd> even them out</span></div>
+        <div class="row"><span class="combo"><kbd class="k">!</kbd></span><span class="desc">Pop this split into its own tab</span></div>
+        <div class="row"><span class="combo"><kbd class="k">x</kbd></span><span class="desc">Close this split &nbsp;<span style="color:var(--overlay)">(asks first)</span></span></div>
       </div>
 
       <!-- Copy / paste -->
       <div class="map m-copy">
-        <h3><span class="dot"></span> Copiar y pegar <span style="color:var(--overlay); font-weight:400; letter-spacing:0; font-size:.72rem; text-transform:none">· sin AltGr</span></h3>
-        <div class="row"><span class="combo"><kbd class="k">Esc</kbd></span><span class="desc">Entrar al modo copiar / scroll</span></div>
-        <div class="row"><span class="combo"><kbd class="k">v</kbd></span><span class="desc">Empezar selección &nbsp;<span style="color:var(--overlay)">(en modo copiar)</span></span></div>
-        <div class="row"><span class="combo"><kbd class="k">y</kbd></span><span class="desc">Copiar al portapapeles y salir</span></div>
-        <div class="row"><span class="combo"><kbd class="k">/</kbd></span><span class="desc">Buscar &nbsp;·&nbsp; <kbd class="k">n</kbd> siguiente resultado</span></div>
-        <div class="row"><span class="combo"><kbd class="k">P</kbd></span><span class="desc">Pegar (de vuelta en modo normal)</span></div>
+        <h3><span class="dot"></span> Copy and paste <span style="color:var(--overlay); font-weight:400; letter-spacing:0; font-size:.72rem; text-transform:none">· no AltGr</span></h3>
+        <div class="row"><span class="combo"><kbd class="k">Esc</kbd></span><span class="desc">Enter copy / scroll mode</span></div>
+        <div class="row"><span class="combo"><kbd class="k">v</kbd></span><span class="desc">Start a selection &nbsp;<span style="color:var(--overlay)">(in copy mode)</span></span></div>
+        <div class="row"><span class="combo"><kbd class="k">y</kbd></span><span class="desc">Copy to the clipboard and leave</span></div>
+        <div class="row"><span class="combo"><kbd class="k">/</kbd></span><span class="desc">Search &nbsp;·&nbsp; <kbd class="k">n</kbd> next match</span></div>
+        <div class="row"><span class="combo"><kbd class="k">P</kbd></span><span class="desc">Paste (back in normal mode)</span></div>
       </div>
 
       <!-- Plugins / session -->
       <div class="map m-plug" style="grid-column:1 / -1">
-        <h3><span class="dot"></span> Guardar, restaurar y plugins</h3>
-        <div class="row"><span class="combo"><kbd class="k">Ctrl</kbd><span class="plus">+</span><kbd class="k">s</kbd></span><span class="desc">Guardar workspaces / tabs / splits (resurrect)</span></div>
-        <div class="row"><span class="combo"><kbd class="k">Ctrl</kbd><span class="plus">+</span><kbd class="k">r</kbd></span><span class="desc">Restaurar el último layout guardado</span></div>
-        <div class="row"><span class="combo"><kbd class="k">I</kbd></span><span class="desc">Instalar los plugins del perfil</span></div>
-        <div class="row"><span class="combo"><kbd class="k">U</kbd></span><span class="desc">Actualizar plugins instalados</span></div>
-        <div class="row"><span class="combo"><kbd class="k">r</kbd></span><span class="desc">Recargar el perfil después de editarlo</span></div>
+        <h3><span class="dot"></span> Saving, restoring and plugins</h3>
+        <div class="row"><span class="combo"><kbd class="k">Ctrl</kbd><span class="plus">+</span><kbd class="k">s</kbd></span><span class="desc">Save workspaces / tabs / splits (resurrect)</span></div>
+        <div class="row"><span class="combo"><kbd class="k">Ctrl</kbd><span class="plus">+</span><kbd class="k">r</kbd></span><span class="desc">Restore the last saved layout</span></div>
+        <div class="row"><span class="combo"><kbd class="k">I</kbd></span><span class="desc">Install the profile's plugins</span></div>
+        <div class="row"><span class="combo"><kbd class="k">Ctrl</kbd><span class="plus">+</span><kbd class="k">u</kbd></span><span class="desc">Update installed plugins</span></div>
+        <div class="row"><span class="combo"><kbd class="k">M</kbd></span><span class="desc">Mute / unmute the confirmation cues</span></div>
+        <div class="row"><span class="combo"><kbd class="k">D</kbd></span><span class="desc">Dismiss the saved-layout offer</span></div>
+        <div class="row"><span class="combo"><kbd class="k">r</kbd></span><span class="desc">Reload the profile after editing it</span></div>
       </div>
 
     </div>
 
     <div class="callout">
       <span class="ic">↺</span>
-      <div>Las sesiones <b>se guardan cada 15 minutos y se restauran al iniciar</b> (continuum).
-      Reinicia y tus workspaces, tabs y splits vuelven solos.</div>
+      <div>Sessions are <b>saved every 15 minutes, and never restored on their own</b>
+      (continuum, with auto-restore off). Opening tmux always gives you a clean start —
+      but if a recent save exists the bar says so, and
+      <span class="mono">prefix C-r</span> takes it. <span class="mono">prefix D</span>
+      says not this time.</div>
     </div>
   </section>
 
   <!-- ─────────────────────── PLUGINS ──────────────────────────── -->
   <section id="plugins">
-    <div class="eyebrow">qué hace funcionar cada cosa</div>
-    <h2><span class="sec-no">04</span> Los plugins</h2>
+    <div class="eyebrow">what makes each part work</div>
+    <h2><span class="sec-no">04</span> The plugins</h2>
     <div class="plugins">
-      <div class="plug"><span class="badge">tema</span><div><div class="name">catppuccin/tmux</div><div class="what">Estilo Mocha, tabs redondeadas y barra superior.</div></div></div>
-      <div class="plug"><span class="badge">workspaces</span><div><div class="name">tmux-sessionx</div><div class="what">El buscador de <span class="mono">prefix w</span>, con fzf + zoxide.</div></div></div>
-      <div class="plug"><span class="badge">persistencia</span><div><div class="name">resurrect + continuum</div><div class="what">Guarda y restaura tus layouts automáticamente.</div></div></div>
-      <div class="plug"><span class="badge">clipboard</span><div><div class="name">tmux-yank</div><div class="what"><span class="mono">y</span> copia directamente al portapapeles de macOS.</div></div></div>
-      <div class="plug"><span class="badge">barra</span><div><div class="name">tmux-cpu + battery</div><div class="what">Indicadores de CPU y batería en la barra.</div></div></div>
-      <div class="plug"><span class="badge">base</span><div><div class="name">tmux-sensible</div><div class="what">Defaults universales que hacen tmux más cómodo.</div></div></div>
+      <div class="plug"><span class="badge">theme</span><div><div class="name">catppuccin/tmux</div><div class="what">Mocha and Latte palettes, and the status modules.</div></div></div>
+      <div class="plug"><span class="badge">finding</span><div><div class="name">fzf</div><div class="what">Powers the finder and the palette. Not a tmux plugin — just fzf.</div></div></div>
+      <div class="plug"><span class="badge">persistence</span><div><div class="name">resurrect + continuum</div><div class="what">Saves layouts on a timer. Restoring stays your call.</div></div></div>
+      <div class="plug"><span class="badge">clipboard</span><div><div class="name">tmux-yank</div><div class="what"><span class="mono">y</span> copies straight to the macOS clipboard.</div></div></div>
+      <div class="plug"><span class="badge">bar</span><div><div class="name">tmux-cpu + battery</div><div class="what">The CPU and battery readouts on the right.</div></div></div>
+      <div class="plug"><span class="badge">base</span><div><div class="name">tmux-sensible</div><div class="what">The universal defaults that make tmux bearable.</div></div></div>
     </div>
   </section>
 
   <!-- ─────────────────────── QUICKSTART ───────────────────────── -->
   <section id="start">
-    <div class="eyebrow">aprender haciendo</div>
-    <h2><span class="sec-no">05</span> Tus primeros cinco minutos</h2>
+    <div class="eyebrow">learn by doing</div>
+    <h2><span class="sec-no">05</span> Your first five minutes</h2>
     <div class="steps">
       <div class="step"><div class="body">
-        <h3>Crea un workspace</h3>
-        <p>Presiona <span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">w</kbd></span>, escribe el nombre de un proyecto y Enter.</p>
+        <h3>Make a workspace</h3>
+        <p>Press <span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">N</kbd></span>, type a project name, and Enter.</p>
       </div></div>
       <div class="step"><div class="body">
-        <h3>Abre un par de tabs</h3>
-        <p>Usa <span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">t</kbd></span> dos veces. Cambia entre ellas con <kbd class="k">prefix</kbd> y luego <kbd class="k">Tab</kbd>.</p>
+        <h3>Open a couple of tabs</h3>
+        <p>Use <span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">t</kbd></span> twice. Move between them with <kbd class="k">prefix</kbd> then <kbd class="k">Tab</kbd>.</p>
       </div></div>
       <div class="step"><div class="body">
-        <h3>Divide una tab</h3>
-        <p><span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">=</kbd></span> los pone lado a lado; <span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">-</kbd></span> los apila. Muévete con <kbd class="k">prefix</kbd> <kbd class="k">h</kbd>/<kbd class="k">j</kbd>/<kbd class="k">k</kbd>/<kbd class="k">l</kbd>.</p>
+        <h3>Split a tab</h3>
+        <p><span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">=</kbd></span> puts them side by side; <span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">-</kbd></span> stacks them. Move with <kbd class="k">prefix</kbd> <kbd class="k">h</kbd>/<kbd class="k">j</kbd>/<kbd class="k">k</kbd>/<kbd class="k">l</kbd>.</p>
       </div></div>
       <div class="step"><div class="body">
-        <h3>Copia algo sin el mouse</h3>
-        <p><span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">Esc</kbd></span> activa scroll, <kbd class="k">v</kbd> selecciona y <kbd class="k">y</kbd> copia al portapapeles.</p>
+        <h3>Copy something without the mouse</h3>
+        <p><span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">Esc</kbd></span> starts scrolling, <kbd class="k">v</kbd> selects, and <kbd class="k">y</kbd> copies to the clipboard.</p>
       </div></div>
       <div class="step"><div class="body">
-        <h3>Sal sin cerrar nada</h3>
-        <p><span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">d</kbd></span> te desconecta. Vuelve con <code>tmux a</code>; todo sigue ejecutándose.</p>
+        <h3>Leave without closing anything</h3>
+        <p><span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">d</kbd></span> detaches you. Come back with <code>tmux a</code>; everything is still running.</p>
       </div></div>
     </div>
   </section>
 
   <!-- ─────────────────────── THE CLI ──────────────────────────── -->
   <section id="cli">
-    <div class="eyebrow">cuando te olvidas</div>
-    <h2><span class="sec-no">06</span> El comando nachimux</h2>
-    <p>Todos los atajos viven también en un CLI buscable. Ábrelo dentro de tmux con
+    <div class="eyebrow">for when you forget</div>
+    <h2><span class="sec-no">06</span> The nachimux command</h2>
+    <p>Every shortcut also lives in a searchable CLI. Open it inside tmux with
     <span class="combo"><kbd class="k pfx">prefix</kbd><span class="plus"></span><kbd class="k">/</kbd></span>.
-    La consulta y la paleta ejecutable comparten exactamente los mismos datos.</p>
-    <pre><span class="c"># buscar cualquier atajo</span>
+    Looking things up and running them share exactly the same data.</p>
+    <pre><span class="c"># search every shortcut</span>
 nachimux
-<span class="c"># buscar directamente un tema</span>
+<span class="c"># jump straight to a topic</span>
 nachimux split
-<span class="c"># comprobar que todo está listo</span>
+<span class="c"># check everything is in place</span>
 nachimux doctor
-<span class="c"># volver a abrir esta guía</span>
+<span class="c"># check the cheatsheet still matches the real bindings</span>
+nachimux doctor --keys
+<span class="c"># open this guide again</span>
 nachimux docs</pre>
   </section>
 
   <!-- ─────────────────────── FILES ────────────────────────────── -->
   <section id="files">
-    <div class="eyebrow">dónde vive cada cosa</div>
-    <h2><span class="sec-no">07</span> Los archivos</h2>
+    <div class="eyebrow">where everything lives</div>
+    <h2><span class="sec-no">07</span> The files</h2>
     <div class="files">
-      <div class="file"><div class="path">~/.tmux.conf</div><div class="note">Referencia el perfil de este repo.</div></div>
-      <div class="file"><div class="path">&lt;repo&gt;/tmux.spanish.conf</div><div class="note">El perfil real. Edítalo y usa <span class="mono">prefix r</span>.</div></div>
-      <div class="file"><div class="path">~/.tmux/plugins/</div><div class="note">Plugins instalados, administrados por TPM.</div></div>
-      <div class="file"><div class="path">~/.local/bin/nachimux</div><div class="note">Enlace al CLI creado por <span class="mono">nachimux setup</span>.</div></div>
+      <div class="file"><div class="path">~/.tmux.conf</div><div class="note">Points at the profile in this repo.</div></div>
+      <div class="file"><div class="path">&lt;repo&gt;/nachimux.conf</div><div class="note">The real profile. Edit it, then <span class="mono">prefix r</span>.</div></div>
+      <div class="file"><div class="path">~/.tmux/plugins/</div><div class="note">Installed plugins, managed by TPM.</div></div>
+      <div class="file"><div class="path">~/.local/bin/nachimux</div><div class="note">The CLI link created by <span class="mono">nachimux setup</span>.</div></div>
     </div>
     <div class="callout" style="background:color-mix(in oklab, var(--blue) 12%, var(--mantle)); border-color:color-mix(in oklab, var(--blue) 40%, var(--surface0))">
       <span class="ic" style="color:var(--blue)">Aa</span>
-      <div>Los íconos de la barra necesitan una <b>Nerd Font</b>. Si aparecen cuadrados,
-      elige por ejemplo <span class="mono">Hack Nerd Font</span> o <span class="mono">MesloLGS NF</span> en tu terminal.</div>
+      <div>The bar's icons need a <b>Nerd Font</b>. If you see empty boxes, pick something like
+      <span class="mono">Hack Nerd Font</span> or <span class="mono">MesloLGS NF</span> in your terminal.</div>
     </div>
   </section>
 
   <footer>
-    nachimux · pensado para teclado español · Catppuccin Mocha · recarga con prefix r
+    nachimux · built for Spanish keyboards · Catppuccin · reload with prefix r
   </footer>
 
 </main>
@@ -672,10 +697,10 @@ nachimux docs</pre>
       try {
         await navigator.clipboard.writeText(button.dataset.copy);
         const old = button.textContent;
-        button.textContent = 'copiado ✓';
+        button.textContent = 'copied ✓';
         setTimeout(() => { button.textContent = old; }, 1400);
       } catch {
-        button.textContent = 'selecciona el comando';
+        button.textContent = 'select the command';
       }
     });
   });

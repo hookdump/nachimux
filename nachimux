@@ -24,7 +24,7 @@ while [ -h "$SOURCE" ]; do
 done
 ROOT="$(cd -P "$(dirname "$SOURCE")" && pwd)"
 DATA="$ROOT/data/cheatsheet.tsv"
-CONFIG="$ROOT/tmux.spanish.conf"
+CONFIG="$ROOT/nachimux.conf"
 DOCS="$ROOT/tmux-guide.html"
 
 # --- theme ------------------------------------------------------------------
@@ -245,7 +245,7 @@ doctor() {
   check_command gum  yes  'brew install gum'
   check_command zoxide no  'recommended for the workspace switcher: brew install zoxide'
 
-  if [[ -f "$HOME/.tmux.conf" ]] && grep -Fq 'tmux.spanish.conf' "$HOME/.tmux.conf"; then
+  if [[ -f "$HOME/.tmux.conf" ]] && grep -Fq 'nachimux.conf' "$HOME/.tmux.conf"; then
     printf '  [ok]   %-10s sources nachimux\n' '~/.tmux.conf'
   else
     printf '  [fail] %-10s does not source nachimux — run: nachimux setup\n' '~/.tmux.conf'
@@ -306,7 +306,7 @@ setup_nachimux() {
   if grep -Fq "$CONFIG" "$HOME/.tmux.conf" \
       || { [[ -n "$home_source" ]] && grep -Fq "$home_source" "$HOME/.tmux.conf"; }; then
     printf '[ok] ~/.tmux.conf already sources this repo\n'
-  elif grep -Fq 'tmux.spanish.conf' "$HOME/.tmux.conf"; then
+  elif grep -Fq 'nachimux.conf' "$HOME/.tmux.conf"; then
     printf 'nachimux: ~/.tmux.conf already points to another nachimux config; update it manually:\n  %s\n' "$source_line" >&2
     return 1
   else

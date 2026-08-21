@@ -24,7 +24,7 @@
 set -uo pipefail
 
 ROOT="$(cd -P "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CONF="$ROOT/tmux.spanish.conf"
+CONF="$ROOT/nachimux.conf"
 IN=nachi-smoke-in; OUT=nachi-smoke-out
 PASS=0; FAIL=0
 
