@@ -254,21 +254,26 @@ check "and it stays dismissed"          "$( [[ -z "$(t show -gv @nachimux_restor
 check "restoring clears the offer"      "$(t list-keys -T prefix | grep -E '^bind-key +-T prefix C-r ' | grep -o 'restore-hint.sh clear')"
 rm -rf "$rdir"; t set -gu @resurrect-dir 2>/dev/null
 
-# ── FOCUS sizing ───────────────────────────────────────────────────────────
-# A FOCUS tab is one window in two workspaces. Under window-size `latest` a
-# small client viewing FOCUS shrinks that tab in its home workspace too.
-printf '\nfocus sizing\n'
+# ── window sizing stays on tmux's default ──────────────────────────────────
+# This used to assert the opposite: that FOCUS flipped window-size to `largest`.
+# That is reverted. `largest` is global rather than per-window, it interacts with
+# aggressive-resize (which tmux-sensible turns on), and it governs the same
+# create-and-resize path break-pane takes -- the prime suspect for prefix !
+# taking the server down. The invariant now is that NOTHING sets `largest`.
+printf '\nwindow sizing\n'
 t run-shell "$ROOT/scripts/focus.sh size" 2>/dev/null; sleep 0.4
-check "latest while no FOCUS exists"    "$( [[ "$(t show -gv window-size)" == latest ]] && echo y )" \
+check "latest with no FOCUS"            "$( [[ "$(t show -gv window-size)" == latest ]] && echo y )" \
                                         "window-size is $(t show -gv window-size)"
 t new-session -d -s FOCUS 2>/dev/null
 t run-shell "$ROOT/scripts/focus.sh size" 2>/dev/null; sleep 0.4
-check "largest once FOCUS exists"       "$( [[ "$(t show -gv window-size)" == largest ]] && echo y )" \
-                                        "a small client would shrink shared tabs everywhere"
+check "STILL latest once FOCUS exists"  "$( [[ "$(t show -gv window-size)" == latest ]] && echo y )" \
+                                        "window-size became $(t show -gv window-size) — largest is what we backed out"
 t kill-session -t '=FOCUS' 2>/dev/null; sleep 0.6
 t run-shell "$ROOT/scripts/focus.sh size" 2>/dev/null; sleep 0.4
-check "back to latest when it is gone"  "$( [[ "$(t show -gv window-size)" == latest ]] && echo y )"
-check "session-closed re-derives it"    "$(t show-hooks -g | grep 'session-closed' | grep -o 'focus.sh size')"
+check "latest after FOCUS goes away"    "$( [[ "$(t show -gv window-size)" == latest ]] && echo y )"
+check "nothing in the repo sets largest" "$( grep -rn 'window-size largest' --include='*.sh' --include='*.conf' "$ROOT" | grep -v '^\s*#' | grep -qv '#' && echo '' || echo y )" \
+                                        "a code path can still set largest"
+check "session-closed still re-derives"  "$(t show-hooks -g | grep 'session-closed' | grep -o 'focus.sh size')"
 
 # ── context-sensitive hints ────────────────────────────────────────────────
 printf '\nhint bar\n'

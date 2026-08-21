@@ -41,24 +41,27 @@ focus_ids()  { tmux list-windows -t "=$FOCUS" -F '#{window_id}' 2>/dev/null; }
 focus_count(){ focus_ids | grep -c . | tr -d ' '; }
 win_name()   { tmux display-message -p -t "$1" '#{window_name}' 2>/dev/null; }
 
-# ── sizing, which is not optional once tabs are shared ──────────────────────
-# A FOCUS tab is ONE window shown in two workspaces, and window-size `latest`
-# means whichever client touched it last decides how big it is. So attaching to
-# FOCUS from a small terminal quietly shrinks that tab in its home workspace
-# too -- the config has warned about this in a comment since FOCUS landed,
-# without ever doing anything about it.
+# ── sizing: REVERTED to tmux's default, deliberately ────────────────────────
+# This used to flip window-size to `largest` whenever a FOCUS workspace existed,
+# so a small client viewing a shared tab would pan instead of shrinking that tab
+# everywhere it appears. Good intent, and it is backed out.
 #
-# `largest` inverts the trade: the window stays as big as the biggest client
-# viewing it, and a smaller client pans around it instead of forcing everyone
-# down to its size. That is the right way round for shared tabs, and the wrong
-# way round for everything else, which is why it is applied only while a FOCUS
-# workspace actually exists and dropped again the moment it does not.
+# `largest` is global, not per-window: turning it on for FOCUS turned it on for
+# every window in every session. It also interacts with aggressive-resize, which
+# tmux-sensible sets on -- the man page ties the two together explicitly -- and
+# it governs exactly the create-a-window-and-resize path that `break-pane` takes.
+# With clients of very different sizes attached (65 and 155 columns here), that
+# combination is the prime suspect for prefix ! taking the whole server down.
+#
+# So this is back to `latest`, which is tmux's default and what this config ran
+# on for its entire life before 2026-08-20. The shared-tab annoyance it was
+# meant to fix is a real but small cost; losing every session is not.
+#
+# The function stays rather than being deleted so the session-closed hook and
+# the `size` subcommand keep working, and so that anything a previous run left
+# set to `largest` gets put back on the next event.
 sync_window_size() {
-  if has_focus; then
-    tmux set -g window-size largest 2>/dev/null || true
-  else
-    tmux set -g window-size latest  2>/dev/null || true
-  fi
+  tmux set -g window-size latest 2>/dev/null || true
 }
 
 # A session can't be created empty, so a brand-new FOCUS is born holding one
