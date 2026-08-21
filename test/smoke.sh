@@ -54,6 +54,13 @@ boot() { # boot <windows> [name-prefix]  — real config, real attached client
 }
 screen(){ tmux -L $OUT capture-pane -p -t host 2>/dev/null | head -"${1:-4}"; }
 
+# Send a real keystroke to the attached client, the way a person would. Some tmux
+# calls behave differently -- or crash -- only when a client is attached, so a
+# command run against a detached server is not the same test.
+sendkey(){ tmux -L $OUT send-keys -t host "$@" 2>/dev/null; sleep 0.6; }
+prefixkey(){ tmux -L $OUT send-keys -t host -H 02 2>/dev/null; sleep 0.4; sendkey "$1"; }
+alive(){ tmux -L $IN ls >/dev/null 2>&1; }
+
 # Screen reads race the redraw: capture-pane returns whatever is on the terminal
 # at that instant, and a bar that is about to repaint reads as empty. Retry
 # briefly instead of asserting on one sample.
@@ -135,6 +142,39 @@ if boot 11; then
   check "11 short tabs need one row"  "$( [[ "$(t show -t s -v status)" == 2 ]] && echo y )" \
                                       "status=$(t show -t s -v status) — the old decade rule split these needlessly"
   check "row 0 shows the last one"    "$(screen_has 1 'wkk')"
+fi
+
+# ── window commands, WITH A CLIENT ATTACHED ────────────────────────────────
+# This section exists because of a real escape. `break-pane` SEGFAULTS tmux 3.7
+# -- the whole server, every session -- but ONLY when a client is attached. Every
+# other window assertion in this file ran against a detached server, where the
+# same call is harmless, so the suite reported green while prefix ! was fatal.
+#
+# So these drive the real keystroke through the real client and check the server
+# is still standing afterwards. Anything that can take the server down belongs
+# here, not in the detached checks above.
+printf '\nwindow commands (client attached)\n'
+if boot 3; then
+  check "the server is up to begin with"   "$( alive && echo y )"
+  # prefix ! must carry -n. Without it break-pane hands window_set_name a NULL.
+  check "break-pane passes a name"         "$(t list-keys -T prefix | grep -E '^bind-key +-T prefix ! ' | grep -o 'break-pane -n')" \
+                                           "plain break-pane segfaults tmux 3.7"
+  check "the palette's copy does too"      "$(awk -F'\t' '$3=="!"{print $5}' "$ROOT/data/cheatsheet.tsv" | grep -o 'break-pane -n')" \
+                                           "the palette runs that column verbatim"
+  t split-window -d -t s:1 2>/dev/null; sleep 0.8
+  t select-window -t s:1 2>/dev/null; sleep 0.5
+  before_w="$(t list-windows -t s 2>/dev/null | grep -c .)"
+  prefixkey '!'
+  sleep 1.5
+  check "server SURVIVES prefix !"         "$( alive && echo y )" \
+                                           "break-pane took the server down — the crash is back"
+  after_w="$(t list-windows -t s 2>/dev/null | grep -c .)"
+  check "and the pane became a tab"        "$( [[ "${after_w:-0}" -gt "${before_w:-0}" ]] && echo y )" \
+                                           "windows went $before_w -> $after_w"
+  # The -n placeholder must not survive: automatic-rename replaces it.
+  sleep 1.5
+  check "the placeholder is renamed away"  "$( [[ -z "$(t list-windows -t s -F '#{window_name}' 2>/dev/null | grep -x 'split')" ]] && echo y )" \
+                                           "a window is still called 'split'"
 fi
 
 # ── key tables ─────────────────────────────────────────────────────────────
