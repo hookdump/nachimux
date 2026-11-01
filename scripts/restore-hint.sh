@@ -45,7 +45,7 @@ case "${1:-check}" in
     [[ -n "$newest" && -s "$newest" ]] || { publish ""; exit 0; }
 
     now=$(date +%s)
-    mtime="$(stat -f %m "$newest" 2>/dev/null || stat -c %Y "$newest" 2>/dev/null || echo 0)"
+    mtime="$(stat -c %Y "$newest" 2>/dev/null || stat -f %m "$newest" 2>/dev/null || echo 0)"
     age=$(( (now - mtime) / 60 ))                       # minutes
     (( age < 0 )) && age=0
     (( age > MAX_AGE_HOURS * 60 )) && { publish ""; exit 0; }
