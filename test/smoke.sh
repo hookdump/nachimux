@@ -74,6 +74,9 @@ screen_has(){ # screen_has <lines> <pattern>
   return 0
 }
 t(){ tmux -L $IN "$@" 2>/dev/null; }
+# Run a script as if from inside the test server, so its plain `tmux` calls reach
+# that server instead of whatever tmux the person running the tests has open.
+tin(){ TMUX="$(tmux -L $IN display -p "#{socket_path}" 2>/dev/null),0,0" "$@"; }
 
 printf '\nnachimux smoke test\n\n'
 
@@ -215,17 +218,19 @@ check "no hook has an empty body"     "$( [[ -z "$empty_hooks" ]] && echo y )" "
 # fzf can swap between them with reload() and never know which one it is showing.
 printf '\nfinder\n'
 for m in all recent needs ws; do
-  bad_rows="$("$ROOT/scripts/find.sh" rows "$m" 2>/dev/null | awk -F'\t' 'NF!=2{print NR}' | head -1)"
+  bad_rows="$(tin "$ROOT/scripts/find.sh" rows "$m" 2>/dev/null | awk -F'\t' 'NF!=2{print NR}' | head -1)"
   check "mode '$m' emits display+target rows" "$( [[ -z "$bad_rows" ]] && echo y )" "row $bad_rows has the wrong field count"
 done
-check "'all' lists every tab"          "$( [[ "$("$ROOT/scripts/find.sh" rows all 2>/dev/null | grep -c .)" -ge 12 ]] && echo y )"
+n_win="$(t list-windows -a | grep -c .)"
+all_rows="$(tin "$ROOT/scripts/find.sh" rows all 2>/dev/null | grep -c .)"
+check "'all' lists every tab"          "$( [[ "$n_win" -ge 1 && "$all_rows" -ge "$n_win" ]] && echo y )" "listed $all_rows of $n_win"
 for k in g f B n; do
   check "prefix $k opens the finder"   "$(t list-keys -T prefix | grep -E "^bind-key +-T prefix $k " | grep -o 'find.sh')"
 done
 check "prefix w keeps its own switcher" "$(t list-keys -T prefix | grep -E '^bind-key +-T prefix w ' | grep -o 'choose-tree')"
 check "prefix W opens workspaces"      "$(t list-keys -T prefix | grep -E '^bind-key +-T prefix W ' | grep -o 'NACHI_FIND_MODE ws')"
 # Recency orders the workspace list; it must never shorten it.
-ws_rows="$("$ROOT/scripts/find.sh" rows ws 2>/dev/null | grep -c .)"
+ws_rows="$(tin "$ROOT/scripts/find.sh" rows ws 2>/dev/null | grep -c .)"
 n_sess="$(t list-sessions 2>/dev/null | grep -c .)"
 check "every workspace is listed"      "$( [[ "$ws_rows" -ge 1 ]] && echo y )" "listed $ws_rows"
 # session_id is literally $0/$2/... -- unquoted in a run-shell command the shell
@@ -357,7 +362,7 @@ t run-shell "$ROOT/scripts/theme.sh dark" >/dev/null
 
 # ── the sheet still describes reality ──────────────────────────────────────
 printf '\ncheatsheet\n'
-K="$("$ROOT/nachimux" doctor --keys 2>/dev/null)"
+K="$(tin "$ROOT/nachimux" doctor --keys 2>/dev/null)"
 check "doctor --keys reports clean"   "$(printf '%s' "$K" | grep -o '\[ok\]')" "$(printf '%s' "$K" | grep '\[fail\]' | head -3)"
 
 # ── setup / uninstall ──────────────────────────────────────────────────────
